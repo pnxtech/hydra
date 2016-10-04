@@ -1,0 +1,49 @@
+{
+  "name": "@flywheelsports/fwsp-hydra",
+  "version": "0.8.13",
+  "author": "Carlos Justiniano",
+  "description": "Hydra - Microservice enabler",
+  "keywords": [
+    "flywheelsports",
+    "hydra",
+    "microservice"
+  ],
+  "main": "index.js",
+  "analyze": false,
+  "engines": {
+    "node": ">=6.2.1"
+  },
+  "scripts": {
+    "test": "mocha specs --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flywheelsports/fwsp-hydra.git"
+  },
+  "dependencies": {
+    "fwsp-jsutils": "1.0.8",
+    "fwsp-prequest": "1.0.5",
+    "fwsp-server-response": "2.2.3",
+    "fwsp-umf-message": "0.0.10",
+    "bluebird": "3.4.6",
+    "humanize-duration": "3.9.1",
+    "moment": "2.15.1",
+    "redis": "2.6.2",
+    "request": "2.75.0",
+    "route-parser": "0.0.5"
+  },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "eslint": "3.7.0",
+    "jscs": "3.0.7",
+    "jscs-jsdoc": "2.0.0",
+    "mocha": "3.1.0"
+  },
+  "bin": {
+    "fwsp-hydra": "index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/flywheelsports/fwsp-hydra/issues"
+  },
+  "homepage": "https://github.com/flywheelsports/fwsp-hydra#readme"
+}

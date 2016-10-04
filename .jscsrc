@@ -1,0 +1,115 @@
+{
+  "requireCurlyBraces": [
+    "for",
+    "while",
+    "do",
+    "try",
+    "catch"
+  ],
+  "requireOperatorBeforeLineBreak": true,
+  "maximumLineLength": {
+    "value": 240,
+    "allowComments": true,
+    "allowRegex": true
+  },
+  "validateIndentation": 2,
+  "validateQuoteMarks": {
+    "mark": "'",
+    "escape": true
+  },
+  "disallowMultipleLineStrings": true,
+  "disallowMixedSpacesAndTabs": true,
+  "disallowTrailingWhitespace": true,
+  "disallowSpaceAfterPrefixUnaryOperators": true,
+  "disallowMultipleVarDecl": {
+    "allExcept": [
+      "undefined"
+    ]
+  },
+  "jsDoc": {
+    "checkAnnotations": "jsdoc3",
+    "checkParamExistence": true,
+    "checkParamNames": true,
+    "requireParamTypes": true,
+    "checkRedundantParams": true,
+    "checkReturnTypes": true,
+    "checkRedundantReturns": true,
+    "requireReturnTypes": true,
+    "checkTypes": true,
+    "checkRedundantAccess": true,
+    "leadingUnderscoreAccess": true,
+    "enforceExistence": false,
+    "requireHyphenBeforeDescription": true,
+    "requireNewlineAfterDescription": true,
+    "requireDescriptionCompleteSentence": true,
+    "requireParamDescription": true,
+    "requireReturnDescription": true
+  },
+  "requireSpaceAfterKeywords": [
+    "if",
+    "else",
+    "for",
+    "while",
+    "do",
+    "switch",
+    "return",
+    "try",
+    "catch"
+  ],
+  "requireSpaceBeforeBinaryOperators": [
+    "=",
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "%=",
+    "<<=",
+    ">>=",
+    ">>>=",
+    "&=",
+    "|=",
+    "^=",
+    "+=",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "<<",
+    ">>",
+    ">>>",
+    "&",
+    "|",
+    "^",
+    "&&",
+    "||",
+    "===",
+    "==",
+    ">=",
+    "<=",
+    "<",
+    ">",
+    "!=",
+    "!=="
+  ],
+  "requireSpaceAfterBinaryOperators": true,
+  "requireSpacesInConditionalExpression": true,
+  "requireSpaceBeforeBlockStatements": true,
+  "requireSpacesInForStatement": true,
+  "requireLineFeedAtFileEnd": true,
+  "requireSpacesInFunctionDeclaration": {
+    "beforeOpeningCurlyBrace": true
+  },
+  "requireSpacesInAnonymousFunctionExpression": {
+    "beforeOpeningCurlyBrace": true
+  },
+  "disallowSpacesInsideParentheses": true,
+  "disallowMultipleLineBreaks": true,
+  "disallowNewlineBeforeBlockStatements": true,
+  "disallowMultipleSpaces": true,
+  "disallowSpaceAfterObjectKeys": true,
+  "requireSpaceBeforeObjectValues": true,
+  "plugins": [
+    "jscs-jsdoc"
+  ]
+}
