@@ -42,6 +42,7 @@ describe('Hydra', () => {
         .then(() => {
           expect(hydra.getServiceName()).to.equal(validConfig.serviceName);
           expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
+          hydra.shutdown();
           done();
         });
     });
@@ -50,6 +51,7 @@ describe('Hydra', () => {
       hydra.init(invalidConfig)
         .then(() => {
           expect(hydra.getServiceName()).to.be.undefined;
+          hydra.shutdown();
           done();
         });
     });
@@ -71,10 +73,12 @@ describe('Hydra', () => {
           hydra.findService(validConfig.serviceName)
             .then((info) => {
               expect(false).to.be.true;
+              hydra.shutdown();
               done();
             })
             .catch((err) => {
               expect(err.message).to.be.equal('Can\'t find test-service service');
+              hydra.shutdown();
               done();
             });
         });
@@ -91,6 +95,7 @@ describe('Hydra', () => {
               hydra.findService(validConfig.serviceName)
                 .then((info) => {
                   expect(info.type).to.equal(validConfig.serviceType);
+                  hydra.shutdown();
                   done();
                 })
                 .catch((err) => {
@@ -110,6 +115,7 @@ describe('Hydra', () => {
                 .then((services) => {
                   expect(services.length).to.be.above(0);
                   expect(services[0].serviceName).to.equal(validConfig.serviceName);
+                  hydra.shutdown();
                   done();
                 });
             });
@@ -127,6 +133,7 @@ describe('Hydra', () => {
                   expect(presence[0]).to.have.property('updatedOn');
                   expect(presence[0]).to.have.property('processID');
                   expect(presence[0].processID).to.be.above(0);
+                  hydra.shutdown();
                   done();
                 });
             });
@@ -134,13 +141,76 @@ describe('Hydra', () => {
     });
   });
 
-  describe('UMF Message', () => {
-    it('should be able to create a valid message', () => {
+  describe('Messaging', () => {
+    it('should be able to create a valid message', function() {
       const hydra = require('../index.js');
       let msg = hydra.createUMFMessage({});
       expect(msg).to.have.property('mid');
       expect(msg).to.have.property('timestamp');
       expect(msg).to.have.property('version');
+      hydra.shutdown();
+    });
+    it('should be able to send message to a service', function(done) {
+      const hydra = require('../index.js');
+      hydra.init(validConfig)
+        .then(() => {
+          hydra.registerService()
+            .then(() => {
+              let msg = hydra.createUMFMessage({
+                to: `${validConfig.serviceName}:/`,
+                from: 'chai-test:/',
+                body: {
+                  title: 'Microservices FTW!'
+                }
+              });
+              return hydra.sendMessage(msg)
+                .catch((err) => {
+                  console.log('err', err);
+                });
+            })
+            .catch((err) => {
+              console.log('err', err);
+            });
+        });
+        hydra.on('message', (message) => {
+          expect(message).to.have.property('mid');
+          expect(message).to.have.property('timestamp');
+          expect(message).to.have.property('version');
+          expect(message.body.title).to.equal('Microservices FTW!');
+          hydra.shutdown();
+          done();
+        });
+    });
+    it('should be able to send message to a specific service', function(done) {
+      const hydra = require('../index.js');
+      hydra.init(validConfig)
+        .then(() => {
+          hydra.registerService()
+            .then(() => {
+              hydra.getServicePresence(validConfig.serviceName)
+                .then((presence) => {
+                  let serviceInstance = presence[0];
+                  let msg = hydra.createUMFMessage({
+                    to: `${serviceInstance.instanceID}@${validConfig.serviceName}:/`,
+                    from: 'chai-test:/',
+                    body: {
+                      title: 'Microservices FTW!'
+                    }
+                  });
+                  hydra.sendMessage(msg)
+                    .then()
+                    .catch((err) => {
+                      console.log('err', err);
+                    });
+                  hydra.on('message', (message) => {
+                    expect(message.body.title).to.equal('Microservices FTW!');
+                    hydra.shutdown();
+                    done();
+                  });
+                });
+            });
+        });
     });
   });
+
 });

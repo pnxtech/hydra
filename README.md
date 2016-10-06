@@ -19,7 +19,7 @@ As an Node module, Hydra provides drop-in functionality which is designed to add
 * **Health Reporting**: Automatic health check reporting. To answer questions such as: Is the application healthy? Is it functioning properly?
 * **Presence Reporting**: Is an instance of service actually available?
 
-> ☕ If you're using ExpressJS to build your microservice you should consider using the [Hydra-Express](https://github.com/flywheelsports/hydra-express) module which provides ExpressJS bindings and a higher level of abstraction.
+> ☕ If you're using ExpressJS to build your microservice you should consider using the [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express) module which provides ExpressJS bindings and a higher level of abstraction.
 
 In this document we'll refer to `services` and `service instances`. A Service Instance and Service Node refers to the same thing. A service is simply the name given to one or more service instances. Consider it a class of service. For example, we might have a service to handle image resizing, and we might simple call that service `image-resizer`. In our cloud infrastructure we might have three instances of the image-resizer service running, in response to high demand.  Each instance is a service instance or node.
 
@@ -32,7 +32,7 @@ In Hydra, a service instance is simply a process which uses Hydra to handle micr
 To use Hydra from another project:
 
 ```
-$ npm i @flywheelsports/hydra
+$ npm i fwsp-hydra
 ```
 
 To contribute and develop locally:
@@ -57,7 +57,7 @@ Once Hydra NPM sits inside of a private NPM repo then the above steps will only 
 To load Hydra simply import it:
 
 ```javascript
-const hydra = require('@flywheelsports/hydra');
+const hydra = require('fwsp-hydra');
 ```
 
 ## Initialization
@@ -242,7 +242,7 @@ Hydra supports inter-service communication in the following ways:
 
 * Discovery and direct use of the server's networking info (IP and Port).
 * Through the use of the `makeAPIRequest` method.
-* Using pub/sub channels.
+* Using inter-service messaging.
 * Using service message queues.
 
 Which approach you use depends on your application's requirements and the amount of extra work you're willing to do. Using Hydra's messaging methods abstracts the network layer functionality you might otherwise need to contend with. So it offers an easier and more reliable way of interacting with remote services.
@@ -287,66 +287,15 @@ hydra.makeAPIRequest(message)
 :
 ```
 
-### Redis-based pub/sub
+### Inter-service messaging
 
-Hydra enabled services can send and receive messages as publishers and/or subscribers.
+Using Hydra you can send message between services and even route messages among a series of services. This is one of the features that the [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router) offers.
 
-As a publisher, a service can use the `openPublisherChannel` method to open a channel on which to publish messages. Then it can use `publishToChannel` method to send a message to an open channel.
+#### Built-in message channels
 
-```javascript
-hydra.openPublisherChannel('hydra:test');
-setInterval(() => {
-  let message = hydra.createUMFMessage({
-    to: 'hydra:test',
-    from: 'blue-service:/',
-    body: {
-      timestamp: parseInt(new Date().getTime() / 1000)
-    }
-  });
-  hydra.publishToChannel('hydra:test', message);
-}, 5000);
-```
+Every hydra service automatically listens to two built-in channels where messages sent from other services arrive.
 
-When a publisher no longer needs to keep a channel open it should close it using the `closePublisherChannel` method.
-
-As a subscriber, a service can listen to messages on a channel:
-
-```javascript
-hydra.openSubscriberChannel('hydra:test');
-hydra.subscribeToChannel('hydra:test', function(message) {
-  console.log(message);
-});
-```
-
-When a service no longer needs to listen to a channel it should close it using the `closeSubscriberChannel` method.
-
-Pub/sub offers services the following key benefits:
-
-* messages don't require the overhead of HTTP headers.
-* communication is relatively immediate compared to HTTP API based polling.
-* messages can be received by multiple listeners.
-* defining communication channels is as simple as specifying a topic name.
-
-#### Built-in message channel
-
-Every hydra service automatically listens to a built-in channel where messages sent from other services arrive.
-
-Your service can receive messages by adding a listener to your loaded hydra instance. The example below demonstrates how to also formulate a response if necessary.
-
-```javascript
-hydra.registerService();
-hydra.on('message', function(message) {
-  // message will be a UMF formatted object
-  console.log(`Received object message: ${msg.mid}: ${JSON.stringify(msg)}`);
-
-  // to send a reply message here or elsewhere in your service use the `sendReplyMessage` call.
-  hydra.sendReplyMessage(message, hydra.createUMFMessage({
-    body: {
-      // response items
-    }
-  }));
-});
-```
+One channel listens to any message sent to a type of service. Another channel listens for message directed to a specific service instance. So a message sent to a `file-processing` service would be received by all instances of that service. While, a message sent to `5585f53bd1171db38eafd79bf16e02f4@file-processing` would only be handled by the service instance with an ID of `5585f53bd1171db38eafd79bf16e02f4`.
 
 To send a message to a service you can use the `sendMessage` call.
 
@@ -366,6 +315,23 @@ The first parameter is the name of the service you want to send a message to, an
 When sendMessage is used the message is sent to all service instances! This may not be what you intended. What if you only want one service instance to handle the incoming message? You should then use a job queue (create your own in Redis or the database of your choice) and only use sendMessage to let services instances know that there are new messages available for processing.
 
 > Warning: Although you can use `sendMessage` to send and to respond to messages it's recommended to use `sendReplyMessage` when replying. The reason for this is that sendReplyMessage uses the source message to properly fill out UMF fields required for robust messaging. This includes things like using the source mid, for, to, from UMF fields to formulate a reply message.
+
+Your service can receive messages by adding a listener to your loaded hydra instance. The example below demonstrates how to also formulate a response if necessary.
+
+```javascript
+hydra.registerService();
+hydra.on('message', function(message) {
+  // message will be a UMF formatted object
+  console.log(`Received object message: ${msg.mid}: ${JSON.stringify(msg)}`);
+
+  // to send a reply message here or elsewhere in your service use the `sendReplyMessage` call.
+  hydra.sendReplyMessage(message, hydra.createUMFMessage({
+    body: {
+      // response items
+    }
+  }));
+});
+```
 
 ### UMF messaging
 
@@ -435,7 +401,6 @@ The list of methods below are organized by the sections which follow. Not all ap
 * Health - Health check and logging
 * Messaging - Message sending
 * Routing - Message routing
-* Events - pub/sub
 
 ## Setup
 
@@ -606,19 +571,6 @@ Makes an API request to a hydra service.
 makeAPIRequest(message)
 ```
 
-#### broadcastAPIRequest
-Broadcasts an API request to all present instances of a  hydra service.
-```javascript
-/**
- * @name broadcastAPIRequest
- * @summary Broadcasts an API request to all present instances of a  hydra service.
- * @param {object} message - UMF formatted message
- * @return {promise} promise - response from API in resolved promise or
- *                   error in rejected promise.
- */
-broadcastAPIRequest(message)
-```
-
 #### sendMessage
 Sends a message to all present instances of a  hydra service.
 ```javascript
@@ -632,6 +584,7 @@ Sends a message to all present instances of a  hydra service.
  */
 sendMessage(serviceName, message)
 ```
+
 
 #### sendReplyMessage
 Sends a reply message based on the original message received.
@@ -683,78 +636,6 @@ Matches a route path to a list of registered routes
 * @return {boolean} match - true if match, false if not
 */
 matchRoute(routePath)
-```
-
-## Pub/Sub Events
-
-#### openPublisherChannel
-Open a publisher channel to send messages to subscribers.
-```javascript
-/**
-* @name openPublisherChannel
-* @summary Open a publisher channel to send messages to subscribers
-* @param {string} topic - channel name (topic)
-*/
-openPublisherChannel(topic)
-```
-
-#### closePublisherChannel
-Closes an open publisher channel
-```javascript
-/**
-* @name closePublisherChannel
-* @summary Closes an open publisher channel
-* @param {string} topic - channel name (topic)
-*/
-closePublisherChannel(topic)
-```
-
-#### publishToChannel
-Publish a message to an open channel.
-```javascript
-/**
-* @name publishToChannel
-* @summary Publish a UMF message to an open channel
-* @param {string} topic - channel name (topic)
-* @param {object} message - A UMF message object
-*/
-publishToChannel(topic, message) {
-  super._publishToChannel(topic, message);
-}
-```
-
-#### openSubscriberChannel
-Open a subscriber channel to receive messages on a given topic.
-```javascript
-/**
-* @name openSubscriberChannel
-* @summary Open a subscriber channel to receive messages on a given topic
-* @param {string} topic - channel name (topic) to subscribe to
-*/
-openSubscriberChannel(topic)
-```
-
-#### closeSubscriberChannel
-Close an open subscriber channel
-```javascript
-/**
-* @name closeSubscriberChannel
-* @summary Close an open subscriber channel
-* @param {string} topic - channel name (topic)
-*/
-closeSubscriberChannel(topic)
-```
-
-#### subscribeToChannel
-Subscribe to an open channel.
-```javascript
-/**
-* @name subscribeToChannel
-* @summary Subscribe to an open channel
-* @param {string} topic - channel name
-* @param {object} callback - function callback(message) to receive messages.
-*/
-subscribeToChannel(topic, callback)
 ```
 
 ## Message queues

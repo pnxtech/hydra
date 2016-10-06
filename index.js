@@ -34,7 +34,8 @@ class Hydra extends EventEmitter {
   constructor() {
     super();
     this.mcMessageKey = 'hydra:service:mc';
-    this.mcDirectMessageKey = '';
+    this.mcMessageChannelClient;
+    this.mcDirectMessageChannelClient;
     this.config = null;
     this.serviceName = '';
     this.serviceDescription = '';
@@ -93,7 +94,6 @@ class Hydra extends EventEmitter {
   */
   _updateInstanceData() {
     this.instanceID = this._serverInstanceID();
-    this.mcDirectMessageKey = `${this.serviceName}:${this.instanceID}`;
     this.initialized = true;
   }
 
@@ -104,18 +104,16 @@ class Hydra extends EventEmitter {
   _shutdown() {
     this._logMessage('error', 'Service is shutting down.');
 
-    let serviceMCChannel = `${this.mcMessageKey}:${serviceName}`;
-    this._closeSubscriberChannel(serviceMCChannel);
+    console.log('closing messaging channels');
+    if (this.mcMessageChannelClient) {
+      this.mcMessageChannelClient.unsubscribe();
+      this.mcMessageChannelClient.quit();
+    }
+    if (this.mcDirectMessageChannelClient) {
+      this.mcDirectMessageChannelClient.unsubscribe();
+      this.mcDirectMessageChannelClient.quit();
+    }
 
-    let serviceDirectMCChannel = `${this.mcDirectMessageKey}`;
-    this._closeSubscriberChannel(serviceDirectMCChannel);
-
-    Object(this.publisherChannels).keys.forEach((topic) => {
-      this.closePublisherChannel(topic);
-    });
-    Object(this.subscriberChannels).keys.forEach((topic) => {
-      this.closeSubscriberChannel(topic);
-    });
     this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
       this.redisdb.quit();
     });
@@ -247,17 +245,18 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(new Error('Unable to set :service key in redis db.'));
             } else {
+              console.log('registering message channels');
               // Setup service message courier channels
-              let serviceMCChannel = `${this.mcMessageKey}:${serviceName}`;
-              this._openSubscriberChannel(serviceMCChannel);
-              this._subscribeToChannel(serviceMCChannel, (message) => {
-                this.emit('message', message);
+              this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+              this.mcMessageChannelClient.subscribe(`${this.mcMessageKey}:${serviceName}`);
+              this.mcMessageChannelClient.on('message', (channel, message) => {
+                this.emit('message', Utils.safeJSONParse(message));
               });
 
-              let serviceDirectMCChannel = `${this.mcDirectMessageKey}`;
-              this._openSubscriberChannel(serviceDirectMCChannel);
-              this._subscribeToChannel(serviceDirectMCChannel, (message) => {
-                this.emit('message', message);
+              this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+              this.mcDirectMessageChannelClient.subscribe(`${this.mcMessageKey}:${serviceName}:${this.instanceID}`);
+              this.mcDirectMessageChannelClient.on('message', (channel, message) => {
+                this.emit('message', Utils.safeJSONParse(message));
               });
 
               // Schedule periodic updates
@@ -307,7 +306,7 @@ class Hydra extends EventEmitter {
                 });
                 if (this.serviceName !== 'hydra-router') {
                   // let routers know that a new service route was registered
-                  this._sendMessage('hydra-router', umfMessage.createMessage({
+                  this._sendBroadcastMessage('hydra-router', umfMessage.createMessage({
                     to: 'hydra-router:/refresh',
                     from: `${this.serviceName}:/`,
                     body: {
@@ -981,81 +980,44 @@ class Hydra extends EventEmitter {
         });
     });
   }
+
   /**
-   * @name _broadcastAPIRequest
-   * @summary Broadcasts an API request to all present instances of a  hydra service.
-   * @param {object} message - UMF formatted message
-   * @return {promise} promise - response from API in resolved promise or
-   *                   error in rejected promise.
-   */
-  _broadcastAPIRequest(message) {
-    return new Promise((resolve, reject) => {
-      if (!umfMessage.validateMessage(message)) {
-        resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
-        return;
-      }
-
-      let parsedRoute = umfMessage.parseRoute(message.to);
-      if (parsedRoute.error) {
-        resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, parsedRoute.error));
-        return;
-      }
-
-      if (parsedRoute.apiRoute === '') {
-        resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, 'message `to` field does no specify a valid route'));
-        return;
-      }
-
-      this._getServicePresence(parsedRoute.serviceName)
-        .then((instances) => {
-          if (instances.length === 0) {
-            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
-            return;
-          }
-          let promises = [];
-
-          instances.forEach((instance) => {
-            let options = {
-              url: `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`,
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json; charset=UTF-8'
-              },
-              method: parsedRoute.httpMethod
-            };
-            promises.push(pRequest(options, message.body));
-          });
-          return Promise.all(promises)
-            .then((results) => {
-              resolve(results);
-            });
-        })
-        .catch((err) => {
-          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
-        });
-    });
+  * @name _sendMessageThroughChannel
+  * @summary Sends a message to a redis pubsub channel
+  * @param {string} channel - channel name
+  * @param {object} message - UMF formatted message object
+  */
+  _sendMessageThroughChannel(channel, message) {
+    let messageChannel = redis.createClient(this.config.redis.port, this.config.redis.url);
+    if (messageChannel) {
+      let strMessage = Utils.safeJSONStringify(message);
+      messageChannel.publish(channel, strMessage);
+      messageChannel.quit();
+    }
   }
 
   /**
    * @name sendMessage
-   * @summary Sends a message to all present instances of a  hydra service.
-   * @param {string} serviceName - Name of service
+   * @summary Sends a message to an instances of a hydra service.
    * @param {object} message - UMF formatted message object
    * @return {object} promise - resolved promise if sent or
    *                   error in rejected promise.
    */
-  _sendMessage(serviceName, message) {
+  _sendMessage(message) {
     return new Promise((resolve, reject) => {
+      let { serviceName, instance } = umfMessage.parseRoute(message.to);
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
-            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
+            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${serviceName} instances`));
             return;
           }
-          let serviceMCChannel = `${this.mcMessageKey}:${serviceName}`;
-          this._openPublisherChannel(serviceMCChannel);
-          this._publishToChannel(serviceMCChannel, message);
-          this._closePublisherChannel(serviceMCChannel);
+          if (instance && instance !== '') {
+            this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}:${instance}`, message);
+          } else {
+            let serviceInstance = instances[Math.floor(Math.random() * instances.length)];
+            this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
+          }
           resolve();
         })
         .catch((err) => {
@@ -1080,75 +1042,31 @@ class Hydra extends EventEmitter {
       from: originalMessage.to,
       'for': originalMessage['for']
     }, messageResponse);
-    return this._sendMessage(serviceName, reply);
+    return this._sendMessage(reply);
   }
 
   /**
-  * @name _openPublisherChannel
-  * @summary Open a publisher channel to send messages to subscribers
-  * @param {string} topic - channel name (topic)
-  */
-  _openPublisherChannel(topic) {
-    let channel = redis.createClient(this.config.redis.port, this.config.redis.url);
-    this.publisherChannels[topic] = channel;
-  }
-
-  /**
-  * @name _closePublisherChannel
-  * @summary Closes an open publisher channel
-  * @param {string} topic - channel name (topic)
-  */
-  _closePublisherChannel(topic) {
-    let channel = this.publisherChannels[topic];
-    channel.unsubscribe();
-    channel.quit();
-    delete this.publisherChannels[topic];
-  }
-
-  /**
-  * @name _publishToChannel
-  * @summary Publish a UMF message to an open channel
-  * @param {string} topic - channel name (topic)
-  * @param {object} message - A UMF message object
-  */
-  _publishToChannel(topic, message) {
-    let channel = this.publisherChannels[topic];
-    channel.publish(topic, Utils.safeJSONStringify(message));
-  }
-
-  /**
-  * @name _openSubscriberChannel
-  * @summary Open a subscriber channel to recieve messages on a given topic
-  * @param {string} topic - channel name (topic) to subscribe to
-  */
-  _openSubscriberChannel(topic) {
-    let channel = redis.createClient(this.config.redis.port, this.config.redis.url);
-    this.subscriberChannels[topic] = channel;
-    channel.subscribe(topic);
-  }
-
-  /**
-  * @name _closeSubscriberChannel
-  * @summary Close an open subscriber channel
-  * @param {string} topic - channel name (topic)
-  */
-  _closeSubscriberChannel(topic) {
-    let channel = this.subscriberChannels[topic];
-    channel.unsubscribe();
-    channel.quit();
-    delete this.subscriberChannels[topic];
-  }
-
-  /**
-  * @name _subscribeToChannel
-  * @summary Subscribe to an open channel
-  * @param {string} topic - channel name
-  * @param {object} callback - function callback(message) to recieve messages
-  */
-  _subscribeToChannel(topic, callback) {
-    let channel = this.subscriberChannels[topic];
-    channel.on('message', (channelName, message) => {
-      callback(Utils.safeJSONParse(message));
+   * @name sendBroadcastMessage
+   * @summary Sends a message to all present instances of a hydra service.
+   * @param {object} message - UMF formatted message object
+   * @return {object} promise - resolved promise if sent or
+   *                   error in rejected promise.
+   */
+  _sendBroadcastMessage(message) {
+    return new Promise((resolve, reject) => {
+      let { serviceName } = umfMessage.parseRoute(message.to);
+      this._getServicePresence(serviceName)
+        .then((instances) => {
+          if (instances.length === 0) {
+            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${serviceName} instances`));
+            return;
+          }
+          this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}`, message);
+          resolve();
+        })
+        .catch((err) => {
+          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+        });
     });
   }
 
@@ -1463,26 +1381,14 @@ class IHydra extends Hydra {
   }
 
   /**
-   * @name broadcastAPIRequest
-   * @summary Broadcasts an API request to all present instances of a  hydra service.
-   * @param {object} message - UMF formatted message
-   * @return {promise} promise - response from API in resolved promise or
-   *                   error in rejected promise.
-   */
-  broadcastAPIRequest(message) {
-    return super._broadcastAPIRequest(message);
-  }
-
-  /**
    * @name sendMessage
    * @summary Sends a message to all present instances of a  hydra service.
-   * @param {string} serviceName - Name of service
    * @param {string | object} message - Plain string or UMF formatted message object
    * @return {object} promise - resolved promise if sent or
    *                   error in rejected promise.
    */
-  sendMessage(serviceName, message) {
-    return super._sendMessage(serviceName, message);
+  sendMessage(message) {
+    return super._sendMessage(message);
   }
 
   /**
@@ -1496,6 +1402,18 @@ class IHydra extends Hydra {
   sendReplyMessage(originalMessage, messageResponse) {
     return super._sendMessage(originalMessage, messageResponse);
   }
+
+  /**
+   * @name sendBroadcastMessage
+   * @summary Sends a message to all present instances of a  hydra service.
+   * @param {string | object} message - Plain string or UMF formatted message object
+   * @return {object} promise - resolved promise if sent or
+   *                   error in rejected promise.
+   */
+  sendBroadcastMessage(message) {
+    return super._sendBroadcastMessage(message);
+  }
+
 
   /**
   * @name registerRoutes
@@ -1526,62 +1444,6 @@ class IHydra extends Hydra {
   */
   matchRoute(routePath) {
     return super._matchRoute(routePath);
-  }
-
-  /**
-  * @name openPublisherChannel
-  * @summary Open a publisher channel to send messages to subscribers
-  * @param {string} topic - channel name (topic)
-  */
-  openPublisherChannel(topic) {
-    super._openPublisherChannel(topic);
-  }
-
-  /**
-  * @name closePublisherChannel
-  * @summary Closes an open publisher channel
-  * @param {string} topic - channel name (topic)
-  */
-  closePublisherChannel(topic) {
-    super._closePublisherChannel(topic);
-  }
-
-  /**
-  * @name publishToChannel
-  * @summary Publish a UMF message to an open channel
-  * @param {string} topic - channel name (topic)
-  * @param {object} message - UMF message to publish
-  */
-  publishToChannel(topic, message) {
-    super._publishToChannel(topic, message);
-  }
-
-  /**
-  * @name openSubscriberChannel
-  * @summary Open a subscriber channel to receive messages on a given topic
-  * @param {string} topic - channel name (topic) to subscribe to
-  */
-  openSubscriberChannel(topic) {
-    super._openSubscriberChannel(topic);
-  }
-
-  /**
-  * @name closeSubscriberChannel
-  * @summary Close an open subscriber channel
-  * @param {string} topic - channel name (topic)
-  */
-  closeSubscriberChannel(topic) {
-    super._closeSubscriberChannel(topic);
-  }
-
-  /**
-  * @name subscribeToChannel
-  * @summary Subscribe to an open channel
-  * @param {string} topic - channel name
-  * @param {object} callback - function callback(message) to receive messages
-  */
-  subscribeToChannel(topic, callback) {
-    super._subscribeToChannel(topic, callback);
   }
 
   /**
