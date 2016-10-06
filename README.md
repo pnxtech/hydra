@@ -1,4 +1,4 @@
-![](hydra.jpg)
+![](hydra.png)
 
 # Hydra
 
