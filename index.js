@@ -18,6 +18,7 @@ const umfMessage = require('fwsp-umf-message');
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
+const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
 const PRESENCE_UPDATE_INTERVAL = 5000; // unit = milli-seconds, so every 5 seconds
 const HEALTH_UPDATE_INTERVAL = 5000;
@@ -33,7 +34,7 @@ const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields
 class Hydra extends EventEmitter {
   constructor() {
     super();
-    this.mcMessageKey = 'hydra:service:mc';
+
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
     this.config = null;
@@ -248,13 +249,13 @@ class Hydra extends EventEmitter {
               console.log('registering message channels');
               // Setup service message courier channels
               this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
-              this.mcMessageChannelClient.subscribe(`${this.mcMessageKey}:${serviceName}`);
+              this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
               this.mcMessageChannelClient.on('message', (channel, message) => {
                 this.emit('message', Utils.safeJSONParse(message));
               });
 
               this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
-              this.mcDirectMessageChannelClient.subscribe(`${this.mcMessageKey}:${serviceName}:${this.instanceID}`);
+              this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
               this.mcDirectMessageChannelClient.on('message', (channel, message) => {
                 this.emit('message', Utils.safeJSONParse(message));
               });
@@ -1013,10 +1014,10 @@ class Hydra extends EventEmitter {
             return;
           }
           if (instance && instance !== '') {
-            this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}:${instance}`, message);
+            this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
           } else {
             let serviceInstance = instances[Math.floor(Math.random() * instances.length)];
-            this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
+            this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
           }
           resolve();
         })
@@ -1061,7 +1062,7 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${serviceName} instances`));
             return;
           }
-          this._sendMessageThroughChannel(`${this.mcMessageKey}:${serviceName}`, message);
+          this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}`, message);
           resolve();
         })
         .catch((err) => {
