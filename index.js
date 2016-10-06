@@ -105,7 +105,6 @@ class Hydra extends EventEmitter {
   _shutdown() {
     this._logMessage('error', 'Service is shutting down.');
 
-    console.log('closing messaging channels');
     if (this.mcMessageChannelClient) {
       this.mcMessageChannelClient.unsubscribe();
       this.mcMessageChannelClient.quit();
@@ -246,7 +245,6 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(new Error('Unable to set :service key in redis db.'));
             } else {
-              console.log('registering message channels');
               // Setup service message courier channels
               this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
               this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
