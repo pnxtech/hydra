@@ -1,7 +1,5 @@
 ![](hydra.png)
 
-# Hydra
-
 Hydra is a module designed to enable the construction of microservices and/or enable non-service applications to discover and utilize microservices. As such, Hydra helps address a broad class of concerns when building distributed applications.
 
 > ☕ This project was named after [Hydra](https://en.wikipedia.org/wiki/Hydra_(Dungeons_%26_Dragons)), a mythical multi-headed beast from Greek and Roman mythology.
