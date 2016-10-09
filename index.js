@@ -1399,7 +1399,7 @@ class IHydra extends Hydra {
    *                   error in rejected promise.
    */
   sendReplyMessage(originalMessage, messageResponse) {
-    return super._sendMessage(originalMessage, messageResponse);
+    return super._sendReplyMessage(originalMessage, messageResponse);
   }
 
   /**
