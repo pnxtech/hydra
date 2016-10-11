@@ -305,7 +305,8 @@ class Hydra extends EventEmitter {
                 });
                 if (this.serviceName !== 'hydra-router') {
                   // let routers know that a new service route was registered
-                  this._sendBroadcastMessage(umfMessage.createMessage({
+                  resolve();
+                  return this._sendBroadcastMessage(umfMessage.createMessage({
                     to: 'hydra-router:/refresh',
                     from: `${this.serviceName}:/`,
                     body: {
