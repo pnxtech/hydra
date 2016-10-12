@@ -1036,12 +1036,13 @@ class Hydra extends EventEmitter {
    */
   _sendReplyMessage(originalMessage, messageResponse) {
     let { serviceName } = umfMessage.parseRoute(originalMessage.to);
-    let reply = Object.assign(originalMessage, {
-      rmid: originalMessage.mid,
-      to: originalMessage.from,
-      from: originalMessage.to,
-      'for': originalMessage['for']
-    }, messageResponse);
+    let longOriginalMessage = umfMessage.toLong(originalMessage);
+    let reply = Object.assign(longOriginalMessage, {
+      rmid: longOriginalMessage.mid,
+      to: longOriginalMessage.from,
+      from: longOriginalMessage.to,
+      'for': longOriginalMessage['for']
+    }, umfMessage.toLong(messageResponse));
     return this._sendMessage(reply);
   }
 
@@ -1089,8 +1090,9 @@ class Hydra extends EventEmitter {
         return;
       }
 
+      let longMessage = umfMessage.toLong(message);
       let serviceName = parsedRoute.serviceName;
-      let msg = Utils.safeJSONStringify(message);
+      let msg = Utils.safeJSONStringify(longMessage);
       this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, msg, (err, data) => {
         if (err) {
           reject(err);
