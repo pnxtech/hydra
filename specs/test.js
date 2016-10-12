@@ -3,7 +3,6 @@
 require('./helpers/chai.js');
 require('sinon');
 
-const config = require('./properties').value;
 const version = require('../package.json').version;
 const redis = require('redis');
 const invalidConfig = {};
