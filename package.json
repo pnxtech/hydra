@@ -1,6 +1,6 @@
 {
   "name": "@flywheelsports/fwsp-hydra",
-  "version": "0.9.10",
+  "version": "0.10.0",
   "author": "Carlos Justiniano",
   "description": "A library for building microservices - built on Redis",
   "keywords": [
