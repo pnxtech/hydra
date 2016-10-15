@@ -1041,7 +1041,7 @@ class Hydra extends EventEmitter {
       rmid: longOriginalMessage.mid,
       to: longOriginalMessage.from,
       from: longOriginalMessage.to,
-      'for': longOriginalMessage['for']
+      forward: longOriginalMessage.forward
     }, UMFMessage.createMessage(messageResponse));
     return this._sendMessage(reply);
   }

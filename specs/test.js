@@ -165,10 +165,11 @@ describe('Hydra', () => {
         });
         hydra.on('message', (message) => {
           hydra.shutdown();
-          expect(message).to.have.property('mid');
-          expect(message).to.have.property('timestamp');
-          expect(message).to.have.property('version');
-          expect(message.body.title).to.equal('Microservices FTW!');
+          let msg = JSON.parse(message);
+          expect(msg).to.have.property('mid');
+          expect(msg).to.have.property('timestamp');
+          expect(msg).to.have.property('version');
+          expect(msg.body.title).to.equal('Microservices FTW!');
           done();
         });
     });
