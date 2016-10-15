@@ -14,7 +14,7 @@ const pRequest = require('fwsp-prequest');
 const Utils = require('fwsp-jsutils');
 const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
-const umfMessage = require('fwsp-umf-message');
+const UMFMessage = require('fwsp-umf-message');
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
@@ -306,7 +306,7 @@ class Hydra extends EventEmitter {
                 if (this.serviceName !== 'hydra-router') {
                   // let routers know that a new service route was registered
                   resolve();
-                  return this._sendBroadcastMessage(umfMessage.createMessage({
+                  return this._sendBroadcastMessage(UMFMessage.createMessage({
                     to: 'hydra-router:/refresh',
                     from: `${this.serviceName}:/`,
                     body: {
@@ -889,12 +889,13 @@ class Hydra extends EventEmitter {
    */
   _makeAPIRequest(message) {
     return new Promise((resolve, reject) => {
-      if (!umfMessage.validateMessage(message)) {
+      let umfmsg = UMFMessage.createMessage(message);
+      if (!umfmsg.validateMessage()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
         return;
       }
 
-      let parsedRoute = umfMessage.parseRoute(message.to);
+      let parsedRoute = UMFMessage.parseRoute(umfmsg.to);
       if (parsedRoute.error) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, parsedRoute.error));
         return;
@@ -915,11 +916,11 @@ class Hydra extends EventEmitter {
           },
           method: parsedRoute.httpMethod
         };
-        if (message.authorization) {
-          options.headers.Authorization = message.authorization;
+        if (umfmsg.authorization) {
+          options.headers.Authorization = umfmsg.authorization;
         }
-        if (message.body && (parsedRoute.httpMethod === 'post' || parsedRoute.httpMethod === 'put')) {
-          options.body = Utils.safeJSONStringify(message.body);
+        if (umfmsg.body && (parsedRoute.httpMethod === 'post' || parsedRoute.httpMethod === 'put')) {
+          options.body = Utils.safeJSONStringify(umfmsg.body);
         }
         request(options, (error, response, body) => {
           if (!error) {
@@ -952,10 +953,10 @@ class Hydra extends EventEmitter {
                 },
                 method: parsedRoute.httpMethod
               };
-              if (message.authorization) {
-                options.headers.Authorization = message.authorization;
+              if (umfmsg.authorization) {
+                options.headers.Authorization = umfmsg.authorization;
               }
-              return pRequest(options, message.body)
+              return pRequest(options, umfmsg.body)
                 .then((response) => {
                   resolve(response);
                 })
@@ -1005,7 +1006,7 @@ class Hydra extends EventEmitter {
    */
   _sendMessage(message) {
     return new Promise((resolve, reject) => {
-      let { serviceName, instance } = umfMessage.parseRoute(message.to);
+      let { serviceName, instance } = UMFMessage.parseRoute(message.to);
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
@@ -1035,14 +1036,13 @@ class Hydra extends EventEmitter {
    *                   error in rejected promise.
    */
   _sendReplyMessage(originalMessage, messageResponse) {
-    let { serviceName } = umfMessage.parseRoute(originalMessage.to);
-    let longOriginalMessage = umfMessage.toLong(originalMessage);
+    let longOriginalMessage = UMFMessage.createMessage(originalMessage);
     let reply = Object.assign(longOriginalMessage, {
       rmid: longOriginalMessage.mid,
       to: longOriginalMessage.from,
       from: longOriginalMessage.to,
       'for': longOriginalMessage['for']
-    }, umfMessage.toLong(messageResponse));
+    }, UMFMessage.createMessage(messageResponse));
     return this._sendMessage(reply);
   }
 
@@ -1055,7 +1055,7 @@ class Hydra extends EventEmitter {
    */
   _sendBroadcastMessage(message) {
     return new Promise((resolve, reject) => {
-      let { serviceName } = umfMessage.parseRoute(message.to);
+      let { serviceName } = UMFMessage.parseRoute(message.to);
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
@@ -1079,21 +1079,20 @@ class Hydra extends EventEmitter {
   */
   _queueMessage(message) {
     return new Promise((resolve, reject) => {
-      if (!umfMessage.validateMessage(message)) {
+      let umfmsg = UMFMessage.create(message);
+      if (!umfmsg.validateMessage()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
         return;
       }
 
-      let parsedRoute = umfMessage.parseRoute(message.to);
+      let parsedRoute = UMFMessage.parseRoute(umfmsg.to);
       if (parsedRoute.error) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, parsedRoute.error));
         return;
       }
 
-      let longMessage = umfMessage.toLong(message);
       let serviceName = parsedRoute.serviceName;
-      let msg = Utils.safeJSONStringify(longMessage);
-      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, msg, (err, data) => {
+      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, umfmsg.toJSON(), (err, data) => {
         if (err) {
           reject(err);
         } else {
@@ -1197,7 +1196,7 @@ class Hydra extends EventEmitter {
    * @return {object} message - a UMF formatted message.
    */
   _createUMFMessage(message) {
-    return umfMessage.createMessage(message);
+    return UMFMessage.createMessage(message);
   }
 
   /**
