@@ -249,13 +249,21 @@ class Hydra extends EventEmitter {
               this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
               this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
               this.mcMessageChannelClient.on('message', (channel, message) => {
-                this.emit('message', Utils.safeJSONParse(message));
+                let msg = Utils.safeJSONParse(message);
+                if (msg) {
+                  let umfMsg = UMFMessage.createMessage(msg);
+                  this.emit('message', umfMsg.toShort());
+                }
               });
 
               this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
               this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
               this.mcDirectMessageChannelClient.on('message', (channel, message) => {
-                this.emit('message', Utils.safeJSONParse(message));
+                let msg = Utils.safeJSONParse(message);
+                if (msg) {
+                  let umfMsg = UMFMessage.createMessage(msg);
+                  this.emit('message', umfMsg.toShort());
+                }
               });
 
               // Schedule periodic updates
@@ -991,7 +999,8 @@ class Hydra extends EventEmitter {
   _sendMessageThroughChannel(channel, message) {
     let messageChannel = redis.createClient(this.config.redis.port, this.config.redis.url);
     if (messageChannel) {
-      let strMessage = Utils.safeJSONStringify(message);
+      let msg = UMFMessage.createMessage(message);
+      let strMessage = Utils.safeJSONStringify(msg.toShort());
       messageChannel.publish(channel, strMessage);
       messageChannel.quit();
     }
@@ -1092,7 +1101,8 @@ class Hydra extends EventEmitter {
       }
 
       let serviceName = parsedRoute.serviceName;
-      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, umfmsg.toJSON(), (err, data) => {
+      let shortMessage = umfmsg.toShort();
+      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(shortMessage), (err, data) => {
         if (err) {
           reject(err);
         } else {
