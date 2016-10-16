@@ -898,7 +898,7 @@ class Hydra extends EventEmitter {
   _makeAPIRequest(message) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
-      if (!umfmsg.validateMessage()) {
+      if (!umfmsg.validate()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
         return;
       }
@@ -1045,12 +1045,17 @@ class Hydra extends EventEmitter {
    *                   error in rejected promise.
    */
   _sendReplyMessage(originalMessage, messageResponse) {
-    let longOriginalMessage = UMFMessage.createMessage(originalMessage);
-    let reply = Object.assign(longOriginalMessage.getMessage(), {
+    let longOriginalMessage = UMFMessage
+      .createMessage(originalMessage)
+      .toJSON();
+    let longMessageResponse = UMFMessage
+      .createMessage(messageResponse)
+      .toJSON();
+    let reply = Object.assign(longOriginalMessage, {
       rmid: longOriginalMessage.mid,
       to: longOriginalMessage.from,
       from: longOriginalMessage.to
-    }, UMFMessage.createMessage(messageResponse).getMessage());
+    }, longMessageResponse);
     if (longOriginalMessage.via) {
       reply.to = longOriginalMessage.via;
     }
@@ -1094,7 +1099,7 @@ class Hydra extends EventEmitter {
   _queueMessage(message) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
-      if (!umfmsg.validateMessage()) {
+      if (!umfmsg.validate()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
         return;
       }
@@ -1106,8 +1111,7 @@ class Hydra extends EventEmitter {
       }
 
       let serviceName = parsedRoute.serviceName;
-      let shortMessage = umfmsg.toShort();
-      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(shortMessage), (err, data) => {
+      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(umfmsg.toShort()), (err, data) => {
         if (err) {
           reject(err);
         } else {
@@ -1220,9 +1224,8 @@ class Hydra extends EventEmitter {
    * @return {string} timestamp - ISO 8601 timestamp
    */
   _getTimeStamp() {
-    return moment().toISOString();
+    return new Date().toISOString();
   }
-
 }
 
 /*=========================================================================================================*/
