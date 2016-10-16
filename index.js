@@ -1046,12 +1046,17 @@ class Hydra extends EventEmitter {
    */
   _sendReplyMessage(originalMessage, messageResponse) {
     let longOriginalMessage = UMFMessage.createMessage(originalMessage);
-    let reply = Object.assign(longOriginalMessage, {
+    let reply = Object.assign(longOriginalMessage.getMessage(), {
       rmid: longOriginalMessage.mid,
       to: longOriginalMessage.from,
-      from: longOriginalMessage.to,
-      forward: longOriginalMessage.forward
-    }, UMFMessage.createMessage(messageResponse));
+      from: longOriginalMessage.to
+    }, UMFMessage.createMessage(messageResponse).getMessage());
+    if (longOriginalMessage.via) {
+      reply.to = longOriginalMessage.via;
+    }
+    if (longOriginalMessage.forward) {
+      reply.forward = longOriginalMessage.forward;
+    }
     return this._sendMessage(reply);
   }
 
@@ -1088,7 +1093,7 @@ class Hydra extends EventEmitter {
   */
   _queueMessage(message) {
     return new Promise((resolve, reject) => {
-      let umfmsg = UMFMessage.create(message);
+      let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validateMessage()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
         return;
