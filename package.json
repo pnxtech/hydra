@@ -1,6 +1,6 @@
 {
   "name": "@flywheelsports/fwsp-hydra",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "author": "Carlos Justiniano",
   "description": "A library for building microservices - built on Redis",
   "keywords": [
@@ -23,7 +23,7 @@
   "dependencies": {
     "bluebird": "3.4.6",
     "fwsp-jsutils": "1.0.8",
-    "fwsp-prequest": "1.0.5",
+    "fwsp-prequest": "1.1.0",
     "fwsp-server-response": "2.2.3",
     "fwsp-umf-message": "0.4.2",
     "humanize-duration": "3.9.1",
