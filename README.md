@@ -5,7 +5,7 @@ Hydra is a module designed to enable the construction of microservices and/or en
 > ☕ This project was named after [Hydra](https://en.wikipedia.org/wiki/Hydra_(Dungeons_%26_Dragons)), a mythical multi-headed beast from Greek and Roman mythology.
 > Each head capable of acting independently while achieving an objective. That plays nicely with the idea of multiple processes working to provide a service.
 
-While Hydra is implemented for NodeJS, the functionality it enables can be implemented for other platforms. The core intermediary service dependency is on a shared Redis instance or cluster such as Amazon's ElasticCache.
+While Hydra is implemented for NodeJS, the functionality it enables can be implemented for other platforms. ***The core service dependency is on a shared Redis instance or cluster such as Amazon's ElasticCache***.  To learn more about Redis see [Redis.io](http://redis.io)
 
 As a Node module, Hydra provides drop-in functionality which is designed to address the following microservice concerns:
 
