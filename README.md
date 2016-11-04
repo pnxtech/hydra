@@ -7,19 +7,19 @@ Hydra is a module designed to enable the construction of microservices and/or en
 
 While Hydra is implemented for NodeJS, the functionality it enables can be implemented for other platforms. The core intermediary service dependency is on a shared Redis instance or cluster such as Amazon's ElasticCache.
 
-As an Node module, Hydra provides drop-in functionality which is designed to address the following microservice concerns:
+As a Node module, Hydra provides drop-in functionality which is designed to address the following microservice concerns:
 
 * **Service Registration**: allowing services to register themselves when they come online and to publish their HTTP API routes.
 * **API Routability**: allows API calls to be routed to a microservice.
 * **Messaging Communication**: Inter-service communication via publish and subscribe channels and Message Queues.
 * **Service Load Balancing**: automatically load balances requests based on available (present) instances of a microservice.
 * **Service Discovery**: locating services without having to hardcode their IP addresses and Port information.
-* **Health Reporting**: Automatic health check reporting. To answer questions such as: Is the application healthy? Is it functioning properly?
+* **Health Reporting**: Automatic health check reporting, to answer questions such as: Is the application healthy? Is it functioning properly?
 * **Presence Reporting**: Is an instance of service actually available?
 
 > ☕ If you're using ExpressJS to build your microservice you should consider using the [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express) module which provides ExpressJS bindings and a higher level of abstraction.
 
-In this document we'll refer to `services` and `service instances`. A Service Instance and Service Node refers to the same thing. A service is simply the name given to one or more service instances. Consider it a class of service. For example, we might have a service to handle image resizing, and we might simple call that service `image-resizer`. In our cloud infrastructure we might have three instances of the image-resizer service running, in response to high demand.  Each instance is a service instance or node.
+In this document we'll refer to `services` and `service instances`. A Service Instance and Service Node refers to the same thing. A service is simply the name given to one or more service instances, consider it a class of service. For example, we might have a service to handle image resizing, and we might simply call that service `image-resizer`. In our cloud infrastructure we might have three instances of the image-resizer service running in response to high demand.  Each instance is a service instance or node.
 
 In Hydra, a service instance is simply a process which uses Hydra to handle microservice concerns.
 
@@ -131,7 +131,7 @@ hydra.init(config.hydra);
 
 ## Hydra modes
 
-Hydra may be configured for used in one of two modes:
+Hydra may be configured for use in one of two modes:
 
 1. ***Service mode*** - acts as a service and consumer of other services.
 2. ***Consumer mode*** - only acts as a service consumer without itself being a service.
@@ -156,7 +156,7 @@ hydra.on('message', function(message) {});
 
 #### Consumer mode
 
-If a consumer mode application calls a service mode related method an exception or failed promise will result. Each call is clearly documented at the end of this document to help avoid misuse. But as always, make sure your application is adequately tested.
+If a consumer mode application calls a service mode related method an exception or failed promise will result. Each call is clearly documented at the end of this document to help avoid misuse. But as always make sure your application is adequately tested.
 
 ## Service Discovery
 
@@ -207,7 +207,7 @@ If unavailable then `getServicePresence()` returns a rejected promise.
 
 When Hydra is configured in service mode it automatically records machine and application level information in the designated Redis server.  In addition, Hydra sends presence information. In the unfortunate event that the host application crashes then Hydra would naturally stop updating presence information.
 
-Additionally, Hydra maintains an internal log where it stores issues it detects. We can think of this as a block box flight recorder.
+Additionally, Hydra maintains an internal log where it stores issues it detects. We can think of this as a black box flight recorder.
 
 While all of this happens automatically, your application can augment the information stored by using Hydra's `sendToHealthLog()` method.  You can also retrieve the log using the `getServiceHealthLog()` method.
 
@@ -230,7 +230,7 @@ getServices | Retrieves a list of registered services.
 findService | Locates a specific service.
 getServicePresence | Retrieves the presence status of a particular service
 getServiceHealthAll | Retrieves the health information and health logs for all registered services.
-makeAPIRequest | Makes and API request to the named service.
+makeAPIRequest | Makes an API request to the named service.
 
 > Refer to the end of this document for a complete listing of Hydra functions.
 
@@ -265,9 +265,9 @@ hydra.findService('emailer')
     :
 ```
 
-> Note: using the above approach should first be preceded by a check to see whether the service is available using the `getServicePresence` method. After all, we want to make sure the service is both registered and currently available.
+> Note: using the above approach should be preceded by a check to see whether the service is available using the `getServicePresence` method. After all, we want to make sure the service is both registered, and currently available.
 
-This is where using Hydra's `makeAPIRequest` method ends up being easier and less error prone. The `makeAPIRequest` method accepts an object which contains the service's name along with other useful (but optional) information. The method automatically handles checking for service availability and can even push the message (request) to the service's message queue if the service is temporally unavailable. This is optional behavior and presumes that that this is acceptable to the sender and that the remote service is capable of handling the request as a queued message.
+This is where using Hydra's `makeAPIRequest` method ends up being easier and less error prone. The `makeAPIRequest` method accepts an object which contains the service's name along with other useful, but optional, information. The method automatically handles checking for service availability and can even push the message (request) to the service's message queue if the service is temporally unavailable. This is optional behavior and presumes that this is acceptable to the sender and that the remote service is capable of handling the request as a queued message.
 
 ```javascript
 let message = hydra.createUMFMessage({
@@ -287,13 +287,13 @@ hydra.makeAPIRequest(message)
 
 ### Inter-service messaging
 
-Using Hydra you can send message between services and even route messages among a series of services. This is one of the features that the [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router) offers.
+Using Hydra you can send messages between services and even route messages among a series of services. This is one of the features that the [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router) offers.
 
 #### Built-in message channels
 
-Every hydra service automatically listens to two built-in channels where messages sent from other services arrive.
+Every hydra service automatically listens to two built-in channels, where messages sent from other services arrive.
 
-One channel listens to any message sent to a type of service. Another channel listens for message directed to a specific service instance. So a message sent to a `file-processing` service would be received by all instances of that service. While, a message sent to `5585f53bd1171db38eafd79bf16e02f4@file-processing` would only be handled by the service instance with an ID of `5585f53bd1171db38eafd79bf16e02f4`.
+One channel listens to any message sent to a type of service, another channel listens for messages directed to a specific service instance. So a message sent to a `file-processing` service would be received by all instances of that service. While a message sent to `5585f53bd1171db38eafd79bf16e02f4@file-processing` would only be handled by the service instance with an ID of `5585f53bd1171db38eafd79bf16e02f4`.
 
 To send a message to a service you can use the `sendMessage` call.
 
@@ -310,7 +310,7 @@ hydra.sendMessage('upload-service', message);
 
 The first parameter is the name of the service you want to send a message to, and the second parameter is a UMF formatted object containing a message.
 
-When sendMessage is used the message is sent to all service instances! This may not be what you intended. What if you only want one service instance to handle the incoming message? You should then use a job queue (create your own in Redis or the database of your choice) and only use sendMessage to let services instances know that there are new messages available for processing.
+When sendMessage is used the message is sent to all service instances! This may not be what you intended. What if you only want one service instance to handle the incoming message? You should then use a job queue (create your own in Redis or the database of your choice) and only use sendMessage to let service instances know that there are new messages available for processing.
 
 > Warning: Although you can use `sendMessage` to send and to respond to messages it's recommended to use `sendReplyMessage` when replying. The reason for this is that sendReplyMessage uses the source message to properly fill out UMF fields required for robust messaging. This includes things like using the source mid, for, to, from UMF fields to formulate a reply message.
 
@@ -369,7 +369,7 @@ The createUMFMessage method takes that object and returns a new one with additio
 }
 ```
 
-The additional fields are defined by the UMF specification and aid Hydra and other distributed systems in the handling of messages.  
+The additional fields are defined by the UMF specification and aid Hydra, and other distributed systems in the handling of messages.  
 
 The `createUMFMessage` helper method helps ensure that we're starting with a properly formatted UMF compatible message which we can further extend.
 
@@ -380,7 +380,7 @@ message.priority = 'high';
 message.type = 'service:control';
 ```
 
-It's important to note that we could have also added the `priority` and `type` fields to our original message that was passed to `createUMFMessage`. The method will use your supplied fields to overwrite the ones it creates by default.  So it's important to not overwrite `mid` or `timestamp` in careless ways.
+It's important to note that we could have added the `priority` and `type` fields to our original message that was passed to `createUMFMessage`. The method will use your supplied fields to overwrite the ones it creates by default.  So it's important to not overwrite `mid` or `timestamp` in careless ways.
 
 > Note: For a detailed look at the UMF spec, visit: [Universal Messaging Format](https://github.com/cjus/umf)
 
@@ -461,7 +461,7 @@ getServices()
 ```
 
 #### findService
-Find a service.
+Finds a service.
 ```javascript
 /**
  * @name findService
@@ -486,7 +486,7 @@ getServicePresence(name)
 ```
 
 #### getInstanceID
-Return the instance id for this process.
+Returns the instance id for this process.
 ```javascript
 /**
 * @name getInstanceID
@@ -526,7 +526,7 @@ getServiceHealthLog(name)
 ```
 
 #### getServiceHealthAll
-Retrieve the health status of all instance services.
+Retrieves the health status of all instance services.
 ```javascript
 /**
  * @name getServiceHealthAll
@@ -600,7 +600,7 @@ sendReplyMessage(originalMessage, messageResponse)
 
 ## Routing
 #### registerRoutes
-Register routes.
+Registers routes.
 ```javascript
 /**
 * @name registerRoutes
@@ -613,7 +613,7 @@ registerRoutes(routes)
 ```
 
 #### getAllServiceRoutes
-Retrieve all service routes.
+Retrieves all service routes.
 ```javascript
 /**
 * @name getAllServiceRoutes
@@ -639,7 +639,7 @@ matchRoute(routePath)
 ## Message queues
 
 #### queueMessage
-Queue a message
+Queues a message
 ```javascript
 /**
 * @name queueMessage
@@ -651,7 +651,7 @@ queueMessage(message)
 ```
 
 #### getQueuedMessage
-Retrieve a queued message
+Retrieves a queued message
 ```javascript
 /**
 * @name getQueuedMessage
@@ -663,7 +663,7 @@ getQueuedMessage(serviceName)
 ```
 
 #### markQueueMessage
-Mark a queued message as either completed or not
+Marks a queued message as either completed or not
 ```javascript
 /**
 * @name markQueueMessage
