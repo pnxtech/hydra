@@ -1,5 +1,5 @@
 {
-  "name": "@flywheelsports/fwsp-hydra",
+  "name": "fwsp-hydra",
   "version": "0.10.5",
   "author": "Carlos Justiniano",
   "description": "A library for building microservices - built on Redis",
