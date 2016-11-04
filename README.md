@@ -33,21 +33,6 @@ To use Hydra from another project:
 $ npm install fwsp-hydra
 ```
 
-To contribute and develop locally:
-
-```
-$ npm install
-$ npm init
-```
-
-The NPM Init command above registers the Hydra NPM package locally.  When attempting to utilize this Hydra package from within your application, you should go to your project's root and type:
-
-```
-$ npm init hydra
-```
-
-Once Hydra NPM sits inside of a private NPM repo then the above steps will only be useful when working on the Hydra NPM module itself.
-
 # Using Hydra
 
 ## Importing Hydra
