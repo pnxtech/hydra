@@ -30,7 +30,7 @@ In Hydra, a service instance is simply a process which uses Hydra to handle micr
 To use Hydra from another project:
 
 ```
-$ npm i fwsp-hydra
+$ npm install fwsp-hydra
 ```
 
 To contribute and develop locally:
