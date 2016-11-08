@@ -295,9 +295,7 @@ hydra.sendMessage('upload-service', message);
 
 The first parameter is the name of the service you want to send a message to, and the second parameter is a UMF formatted object containing a message.
 
-When sendMessage is used the message is sent to all service instances! This may not be what you intended.
-
-What if you only want one service instance to handle the incoming message? This scenario isn't considered common - since ideally you want multiple instances of an application available to process requests. However, there are cases where you do want to manage available instances and send them direct communication. This is supported by simply addressing a service using its unique ID. This is shown in the `to` message field below.
+When sendMessage is used, the message is sent to an available, randomly selected, service instance. If you need to specify a specific instance you can simply address a service using its unique service ID. This is shown in the `to` message field below.
 
 
 ```javascript
@@ -308,12 +306,14 @@ let message = hydra.createUMFMessage({
     fileData: '{base64}'
   }
 });
-hydra.sendMessage('upload-service', message);
+hydra.sendMessage(message);
 ```
 
 You can obtain a service's unique ID via the `getInstanceID()` or  `getServicePresence()` methods.
 
-> Warning: Although you can use `sendMessage` to send and to respond to messages it's recommended to use `sendReplyMessage` when replying. The reason for this is that sendReplyMessage uses the source message to properly fill out UMF fields required for robust messaging. This includes things like using the source mid, for, to, from UMF fields to formulate a reply message.
+If you need too, you can use the `sendBroadcastMessage` method to send a message to ALL the available instances of a service.
+
+> Warning: Although, you can use `sendMessage` to send and respond to messages - it's recommended that you use `sendReplyMessage` when replying. The reason for this is that sendReplyMessage uses the source message to properly fill out UMF fields required for robust messaging. This includes things like using the source mid, for, to, from UMF fields to formulate a reply message.
 
 Your service can receive messages by adding a listener to your loaded hydra instance. The example below demonstrates how to also formulate a response if necessary.
 
