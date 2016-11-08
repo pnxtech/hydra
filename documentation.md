@@ -284,7 +284,7 @@ To send a message to a service you can use the `sendMessage` call.
 
 ```javascript
 let message = hydra.createUMFMessage({
-  to: 'hydra:test',
+  to: 'test-service:/',
   from: 'blue-service:/',
   body: {
     fileData: '{base64}'
@@ -295,7 +295,23 @@ hydra.sendMessage('upload-service', message);
 
 The first parameter is the name of the service you want to send a message to, and the second parameter is a UMF formatted object containing a message.
 
-When sendMessage is used the message is sent to all service instances! This may not be what you intended. What if you only want one service instance to handle the incoming message? You should then use a job queue (create your own in Redis or the database of your choice) and only use sendMessage to let service instances know that there are new messages available for processing.
+When sendMessage is used the message is sent to all service instances! This may not be what you intended.
+
+What if you only want one service instance to handle the incoming message? This scenario isn't considered common - since ideally you want multiple instances of an application available to process requests. However, there are cases where you do want to manage available instances and send them direct communication. This is supported by simply addressing a service using its unique ID. This is shown in the `to` message field below.
+
+
+```javascript
+let message = hydra.createUMFMessage({
+  to: 'cef54f47984626c9efbf070c50bfad1b@test-service:/',
+  from: 'blue-service:/',
+  body: {
+    fileData: '{base64}'
+  }
+});
+hydra.sendMessage('upload-service', message);
+```
+
+You can obtain a service's unique ID via the `getInstanceID()` or  `getServicePresence()` methods.
 
 > Warning: Although you can use `sendMessage` to send and to respond to messages it's recommended to use `sendReplyMessage` when replying. The reason for this is that sendReplyMessage uses the source message to properly fill out UMF fields required for robust messaging. This includes things like using the source mid, for, to, from UMF fields to formulate a reply message.
 
