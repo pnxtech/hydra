@@ -1,3 +1,4 @@
+/*eslint-disable no-unused-vars */
 'use strict';
 
 const Promise = require('bluebird');
@@ -198,7 +199,6 @@ class Hydra extends EventEmitter {
     if (!this.initialized) {
       let err = new Error('init() not called, Hydra requires a configuration object.');
       throw err;
-      return;
     }
     return this.serviceName;
   }
@@ -322,7 +322,6 @@ class Hydra extends EventEmitter {
                       serviceName: this.serviceName
                     }
                   }));
-                  resolve();
                 } else {
                   resolve();
                 }
@@ -513,8 +512,7 @@ class Hydra extends EventEmitter {
    * @return {object} obj - object containing server info
    */
   _getHealth() {
-    let lines;
-    let keyval;
+    let lines, keyval;
     let map = {};
     let memory = util.inspect(process.memoryUsage());
 
@@ -737,7 +735,6 @@ class Hydra extends EventEmitter {
     if (name === undefined && !this.isService) {
       let err = new Error('getServiceHealth() failed. Cant get health log since this machine isn\'t a instance.');
       throw err;
-      return;
     }
     if (name === undefined) {
       name = this._getServiceName();
@@ -788,7 +785,6 @@ class Hydra extends EventEmitter {
     if (name === undefined && !this.isService) {
       let err = new Error('getServiceHealthLog() failed. Can\'t get health log since this machine isn\'t an instance.');
       throw err;
-      return;
     }
     if (name === undefined) {
       name = this._getServiceName();
@@ -1149,6 +1145,7 @@ class Hydra extends EventEmitter {
   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
   */
   _markQueueMessage(message, completed, reason) {
+    let serviceName = this._getServiceName();
     return new Promise((resolve, reject) => {
       if (reason) {
         message.body.reason = reason || 'reason not provided';
