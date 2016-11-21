@@ -859,12 +859,27 @@ class Hydra extends EventEmitter {
   * @summary Choose an instance from a list of service instances.
   * @private
   * @param {array} instanceList - array list of service instances
+  * @param {string} defaultInstance - default instance
   * @return {object} promise - resolved or rejected
   */
-  _chooseServiceInstance(instanceList) {
+  _chooseServiceInstance(instanceList, defaultInstance) {
     return new Promise((resolve, reject) => {
+      let instance;
       let instanceIndex = Math.floor(Math.random() * instanceList.length);
-      let instance = instanceList[instanceIndex];
+
+      if (defaultInstance) {
+        for (let i = 0; i < instanceList.length; i++) {
+          if (instanceList[i].instanceID === defaultInstance) {
+            instance = instanceList[i];
+            break;
+          }
+        }
+      }
+
+      if (!instance) {
+        instance = instanceList[instanceIndex];
+      }
+
       this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, result) => {
         if (err) {
           reject(err);
@@ -946,7 +961,7 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
             return;
           }
-          return this._chooseServiceInstance(instances)
+          return this._chooseServiceInstance(instances, parsedRoute.instance)
             .then((instance) => {
               let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
               let options = {
