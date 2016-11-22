@@ -75,7 +75,7 @@ class Hydra extends EventEmitter {
           this.serviceDescription = this.config.serviceDescription || 'not specified';
           this.serviceVersion = this.config.serviceVersion || 'not specified';
 
-          if (this.config.serviceIP === '') {
+          if (!this.config.serviceIP || this.config.serviceIP === '') {
             require('dns').lookup(require('os').hostname(), (err, address, fam) => {
               this.config.serviceIP = address;
               this._updateInstanceData();
