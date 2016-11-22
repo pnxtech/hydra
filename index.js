@@ -920,6 +920,11 @@ class Hydra extends EventEmitter {
         return;
       }
 
+      if (!parsedRoute.httpMethod) {
+        resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, 'HTTP method not specified in `to` field'));
+        return;
+      }
+
       if (parsedRoute.apiRoute === '') {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, 'message `to` field does not specify a valid route'));
         return;
