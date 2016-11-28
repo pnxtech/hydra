@@ -9,3 +9,6 @@ If you're just getting started with Node Microservices and you have ExpressJS ex
 Whether you choose to build an ExpressJS based application or opt for a strictly Node based one, you may want to checkout our [Yeoman generator](https://github.com/flywheelsports/generator-fwsp-hydra) for quickly building either project! In fact you can do this in under 15 seconds. See this [animated gif](microservice.gif)
 
 [Full documentation](documentation.md)
+
+
+[![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
