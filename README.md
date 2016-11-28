@@ -1,5 +1,7 @@
 ![](hydra.png)
 
+[![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Hydra is a light-weight microservices library for NodeJS, which was announced at [EmpireNode 2016](http://empirenode.org/).
 
 A key goal in Hydra is to make building Node-based microservices easy! 
@@ -11,4 +13,3 @@ Whether you choose to build an ExpressJS based application or opt for a strictly
 [Full documentation](documentation.md)
 
 
-[![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
