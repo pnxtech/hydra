@@ -622,11 +622,13 @@ class Hydra extends EventEmitter {
           reject(err);
         } else {
           let nodes = [];
-          Object.keys(data).forEach((entry) => {
-            let item = Utils.safeJSONParse(data[entry]);
-            item.elapsed = parseInt(moment.duration(now - moment(item.updatedOn)) / 1000);
-            nodes.push(item);
-          });
+          if (data) {
+            Object.keys(data).forEach((entry) => {
+              let item = Utils.safeJSONParse(data[entry]);
+              item.elapsed = parseInt(moment.duration(now - moment(item.updatedOn)) / 1000);
+              nodes.push(item);
+            });
+          }
           resolve(nodes);
         }
       });
