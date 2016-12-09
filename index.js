@@ -558,11 +558,12 @@ class Hydra extends EventEmitter {
       message
     };
 
+    if (!suppressEmit) {
+      this.emit('log', errMessage);
+    }
+
     let entry = Utils.safeJSONStringify(errMessage);
     if (entry) {
-      if (!suppressEmit) {
-        this.emit('log', entry);
-      }
       // If issue is with redis we can't use redis to log this error.
       // however the above call to the application logger would be one way of detecting the issue.
       if (this.isService) {
