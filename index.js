@@ -2,6 +2,13 @@
 'use strict';
 
 const Promise = require('bluebird');
+Promise.series = (iterable, action) => {
+  return Promise.mapSeries(
+    iterable.map(action),
+    (value, index, length) => value
+  );
+};
+
 const EventEmitter = require('events');
 const redis = require('redis');
 const moment = require('moment');
@@ -48,19 +55,63 @@ class Hydra extends EventEmitter {
     this._updatePresence = this._updatePresence.bind(this);
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
     this.registeredRoutes = [];
+    this.registeredPlugins = [];
 
     this.publisherChannels = {};
     this.subscriberChannels = {};
   }
 
   /**
+   * @name use
+   * @summary Adds plugins to Hydra
+   * @param {...object} plugins - plugins to register
+   * @return {object} - Promise which will resolve when all plugins are registered
+   */
+  use(...plugins) {
+    return Promise.series(plugins, plugin => this._registerPlugin(plugin));
+  }
+
+  /**
+   * @name _registerPlugin
+   * @summary Registers a plugin with Hydra
+   * @param {object} plugin - HydraPlugin to use
+   */
+  _registerPlugin(plugin) {
+    plugin.setHydra(this);
+    this.registeredPlugins.push(plugin);
+  }
+
+  /**
    * @name init
+   * @summary Register plugins then continue initialization
+   * @param {object} config - configuration object containing hydra specific keys/values
+   * @return {object} promise - resolves with this._init
+   */
+  init(config) {
+    return new Promise((resolve, reject) => {
+      Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
+        .then((...results) => {
+          resolve(this._init(config));
+        });
+    });
+  }
+
+  /**
+   * @name _init
    * @summary Initialize Hydra with config object.
    * @param {object} config - configuration object containing hydra specific keys/values
    * @return {object} promise - resolving if init success or rejecting otherwise
    */
-  init(config) {
+  _init(config) {
     return new Promise((resolve, reject) => {
+      let ready = () => {
+        Promise.series(this.registeredPlugins, plugin => plugin.onServiceReady())
+          .then((...results) => {
+            console.log('Plugins ready');
+            console.dir(results, {colors: true, depth: null});
+            resolve();
+          });
+      };
       this._connectToRedis(config);
       this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
         if (err) {
@@ -79,11 +130,11 @@ class Hydra extends EventEmitter {
             require('dns').lookup(require('os').hostname(), (err, address, fam) => {
               this.config.serviceIP = address;
               this._updateInstanceData();
-              resolve();
+              ready();
             });
           } else {
             this._updateInstanceData();
-            resolve();
+            ready();
           }
         }
       });
@@ -1280,6 +1331,10 @@ class IHydra extends Hydra {
    */
   init(config) {
     return super.init(config);
+  }
+
+  use(...plugins) {
+    return super.use(...plugins);
   }
 
   /**
