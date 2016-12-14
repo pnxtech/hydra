@@ -1,6 +1,6 @@
 'use strict';
 
-const _ = require('lodash');
+const isEqual = require('lodash/isEqual');
 const HydraEvent = require('./events');
 
 /**
@@ -42,7 +42,7 @@ class HydraPlugin {
     this.serviceConfig = serviceConfig;
     this.hydraConfig = serviceConfig.hydra;
     let opts = this.hydraConfig.plugins[this.name];
-    if (!_.isEqual(this.opts, opts)) {
+    if (!isEqual(this.opts, opts)) {
       this.configChanged(opts);
     }
   }
