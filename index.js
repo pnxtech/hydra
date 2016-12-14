@@ -5,7 +5,7 @@ const Promise = require('bluebird');
 Promise.series = (iterable, action) => {
   return Promise.mapSeries(
     iterable.map(action),
-    (value, index, length) => value
+    (value, index, length) => value || iterable[index].name || null
   );
 };
 
@@ -92,7 +92,8 @@ class Hydra extends EventEmitter {
       Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
         .then((...results) => {
           resolve(this._init(config));
-        });
+        })
+        .catch(err => this._logMessage('error', err.toString()));
     });
   }
 
@@ -107,10 +108,9 @@ class Hydra extends EventEmitter {
       let ready = () => {
         Promise.series(this.registeredPlugins, plugin => plugin.onServiceReady())
           .then((...results) => {
-            console.log('Plugins ready');
-            console.dir(results, {colors: true, depth: null});
             resolve();
-          });
+          })
+          .catch(err => this._logMessage('error', err.toString()));
       };
       this._connectToRedis(config);
       this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
