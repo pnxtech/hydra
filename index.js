@@ -492,6 +492,15 @@ class Hydra extends EventEmitter {
       const USED_DISKSPACE_FIELD = 7;
       const SECOND_LINE = 1; // zero index ;-)
       let df = spawn('df', ['-k', '.']);
+      df.on('error', (err) => {
+        if (err.code === 'ENOENT') {
+          // df command could not be executed on host environment.
+          // this is currently the case on Windows - cjus
+          resolve('not supported on os');
+        } else {
+          reject(err);
+        }
+      });
       df.stdout.on('data', (data) => {
         let lines = data.toString().split('\n');
         let results = lines[SECOND_LINE]
