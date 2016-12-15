@@ -420,6 +420,7 @@ The list of methods below are organized by the sections which follow. Not all ap
 * Messaging - Message sending
 * Routing - Message routing
 
+## Setup
 
 #### init
 Initialize Hydra with config object.
