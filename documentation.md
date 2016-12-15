@@ -25,6 +25,25 @@ In Hydra, a service instance is simply a process which uses Hydra to handle micr
 
 > ☕ For a quick overview of what Hydra offers refer to the end of this document for a list of public methods.
 
+* [Installing Hydra](#installing-hydra)
+* [Using Hydra](#using-hydra)
+   * [Importing Hydra](#importing-hydra)
+   * [Initialization](#initialization)
+   * [Hydra modes](#hydra-modes)
+         * [Service mode](#service-mode)
+         * [Consumer mode](#consumer-mode)
+   * [Service Discovery](#service-discovery)
+   * [Presence](#presence)
+   * [Health and Presence](#health-and-presence)
+   * [Using Hydra to monitor services](#using-hydra-to-monitor-services)
+   * [Messaging](#messaging)
+      * [Inter-service messaging](#inter-service-messaging)
+         * [Built-in message channels](#built-in-message-channels)
+      * [UMF messaging](#umf-messaging)
+ * [Hydra Methods](#hydra-methods)
+ * [Hydra Plugins](#hydra-plugins)
+
+
 # Installing Hydra
 
 To use Hydra from another project:
@@ -401,7 +420,6 @@ The list of methods below are organized by the sections which follow. Not all ap
 * Messaging - Message sending
 * Routing - Message routing
 
-## Setup
 
 #### init
 Initialize Hydra with config object.
@@ -676,3 +694,7 @@ Marks a queued message as either completed or not
 */
 markQueueMessage(message, completed, reason)
 ```
+
+# Hydra plugins
+
+See the [Plugin documentation](/plugins.md).
