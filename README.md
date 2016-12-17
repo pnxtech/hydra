@@ -1,5 +1,5 @@
 ![](hydra.png)
-
+[![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra)
 [![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Hydra is a a light-weight library for building distributed computing applications - such as microservices. 
