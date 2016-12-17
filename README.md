@@ -1,6 +1,5 @@
 ![](hydra.png)
-[![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra)
-[![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/fwsp-hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/fwsp-hydra.svg" alt="NPM downloads" /></a></span>
+[![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/fwsp-hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/fwsp-hydra.svg" alt="NPM downloads" /></a></span> [![Join the chat at https://gitter.im/flywheelsports/fwsp-hydra](https://badges.gitter.im/flywheelsports/fwsp-hydra.svg)](https://gitter.im/flywheelsports/fwsp-hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
 
 Hydra is a a light-weight library for building distributed computing applications - such as microservices. 
 It was announced at [EmpireNode 2016](http://empirenode.org/).
