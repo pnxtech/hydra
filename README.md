@@ -19,7 +19,7 @@ Read the [Full documentation](documentation.md)
 
 ### Related projects
 
-* [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra): hydra for ExpressJS developers
+* [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express): hydra for ExpressJS developers
 * [Hydra-cli](https://github.com/flywheelsports/hydra-cli): a hydra commandline client for interacting with Hydra-enabled applications
 * [Hydra Generator](https://github.com/flywheelsports/generator-fwsp-hydra): A Yeoman generator for quickly building hydra-based projects
 * [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router): A service-aware socket and HTTP API router
