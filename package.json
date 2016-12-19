@@ -1,6 +1,6 @@
 {
   "name": "fwsp-hydra",
-  "version": "0.11.5",
+  "version": "0.12.0",
   "author": "Carlos Justiniano",
   "description": "A library for building microservices - built on Redis",
   "keywords": [
@@ -27,6 +27,7 @@
     "fwsp-server-response": "2.2.3",
     "fwsp-umf-message": "0.4.3",
     "humanize-duration": "3.9.1",
+    "lodash": "4.17.2",
     "moment": "2.15.2",
     "redis": "2.6.2",
     "request": "2.76.0",
