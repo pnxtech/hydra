@@ -75,10 +75,11 @@ class Hydra extends EventEmitter {
    * @name _registerPlugin
    * @summary Registers a plugin with Hydra
    * @param {object} plugin - HydraPlugin to use
+   * @return {object} Promise or value
    */
   _registerPlugin(plugin) {
-    plugin.setHydra(this);
     this.registeredPlugins.push(plugin);
+    return plugin.setHydra(this);
   }
 
   /**

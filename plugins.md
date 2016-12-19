@@ -1,8 +1,48 @@
 # Hydra plugins
 
+Hydra's behavior can be extended through plugins.
+This allows different Hydra services to easily take advantage of shared features.
+
+## Overview
+
+Hydra plugins extend the HydraPlugin class.
+
+Plugins should be registered before Hydra is initialized via hydra.init.
+
+E.g.
+
+```
+const YourPlugin = require('./your-plugin');
+hydra.use(new YourPlugin());
+```
+
+Hydra will automatically call several hooks defined by the plugin class:
+
+| Hook | Description
+| --- | ---
+| `setHydra(hydra)` | called during plugin registration
+| `setConfig(config)` | called before hydra initialization
+| `updateConfig(serviceConfig)` | when the service-level config changes, will call configChanged if this plugin's options have changed
+| `configChanged(options)` | when the plugin-level options change
+| `onServiceReady()` | when the service has initialized but before the hydra.init Promise resolves
+
+### Hook return values
+
+`setHydra`, `setConfig`, and `onServiceReady` can return a value or a Promise.
+
+The actual return value isn't important; if the hook returns a value, success is assumed.
+If an error in plugin initialization should result in the service failing to start,
+the plugin hook should throw an Error.
+
+Similarly if a Promise is returned and resolves, success is assumed; the resolve() value is ignored.
+Fatal errors should reject().
+
 ## Quick Tutorial
 
-Set up a hydra service:
+Set up a plugin in five easy steps.
+
+### 1. Set up a hydra service:
+
 ```
 $ yo fwsp-hydra
 ? Name of the service (`-service` will be appended automatically) pingpong
@@ -13,9 +53,14 @@ $ yo fwsp-hydra
 ? Is this a hydra-express service? No
 ? Set up logging? No
 ? Run npm install? Yes
+
+$ cd pingpong-service
 ```
 
-In pong-plugin.js:
+### 2. Create pong-plugin.js:
+
+***Tip:** On OS X, you can copy this snippet and then `pbpaste > pong-plugin.js`*
+
 ```javascript
 // whenever a 'ping' event is emitted, a 'pong' event is emitted after a user-defined delay
 const Promise = require('bluebird');
@@ -64,7 +109,8 @@ class PongPlugin extends HydraPlugin {
 module.exports = PongPlugin;
 ```
 
-Add to config.json:
+### 3. Update `hydra` section of config.json:
+
 ```json
 {
   "hydra": {
@@ -77,13 +123,13 @@ Add to config.json:
 }
 ```
 
-In your hydra service:
+### 4. Set up hydra service entry-point script:
 ```javascript
 const version = require('./package.json').version;
 const hydra = require('fwsp-hydra');
 
 // install plugin
-const PongPlugin = require('./pong-plugin.js');
+const PongPlugin = require('./pong-plugin');
 hydra.use(new PongPlugin());
 
 // add some console.logs so we can see the events happen
@@ -114,5 +160,7 @@ config.init('./config/config.json')
         });
   });
 ```
+
+### 5. Try it out!
 
 Run `npm start`.  After an initial delay, you should start seeing PING!s and PONG!s.
