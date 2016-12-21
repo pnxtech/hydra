@@ -90,16 +90,16 @@ class Hydra extends EventEmitter {
    * @param {object} config - configuration object containing hydra specific keys/values
    * @return {object} promise - resolves with this._init
    */
-   init(config) {
-     return new Promise((resolve, reject) => {
-       Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
-         .then((...results) => {
-           return this._init(config);
-         })
-         .then(() => resolve())
-         .catch(err => this._logMessage('error', err.toString()));
-     });
-   }
+  init(config) {
+    return new Promise((resolve, reject) => {
+      Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
+        .then((...results) => {
+          return this._init(config);
+        })
+        .then(() => resolve())
+        .catch(err => this._logMessage('error', err.toString()));
+    });
+  }
 
   /**
    * @name _init
@@ -133,7 +133,7 @@ class Hydra extends EventEmitter {
           // if serviceIP field contains a name rather than a dotted IP address
           // then use DNS to resolve the name to an IP address.
           if (this.config.serviceIP && this.config.serviceIP !== '' &&
-              net.isIP(this.config.serviceIP) === 0) {
+            net.isIP(this.config.serviceIP) === 0) {
             dns.lookup(this.config.serviceIP, (err, result) => {
               this.config.serviceIP = result;
             });
@@ -154,18 +154,18 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _updateInstanceData
-  * @summary Update instance id and direct message key
-  */
+   * @name _updateInstanceData
+   * @summary Update instance id and direct message key
+   */
   _updateInstanceData() {
     this.instanceID = this._serverInstanceID();
     this.initialized = true;
   }
 
   /**
-  * @name _shutdown
-  * @summary Shutdown hydra safely.
-  */
+   * @name _shutdown
+   * @summary Shutdown hydra safely.
+   */
   _shutdown() {
     this._logMessage('error', 'Service is shutting down.');
 
@@ -234,11 +234,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getKeys
-  * @summary Retrieves a list of redis keys based on pattern.
-  * @param {string} pattern - pattern to filter with
-  * @return {object} promise - promise resolving to array of keys or or empty array
-  */
+   * @name _getKeys
+   * @summary Retrieves a list of redis keys based on pattern.
+   * @param {string} pattern - pattern to filter with
+   * @return {object} promise - promise resolving to array of keys or or empty array
+   */
   _getKeys(pattern) {
     return new Promise((resolve, reject) => {
       this.redisdb.keys(pattern, (err, result) => {
@@ -267,11 +267,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _serverInstanceID
-  * @summary Returns the server instance ID.
-  * @private
-  * @return {string} instance id
-  */
+   * @name _serverInstanceID
+   * @summary Returns the server instance ID.
+   * @private
+   * @return {string} instance id
+   */
   _serverInstanceID() {
     return Utils.md5Hash(`${this.config.serviceIP}:${this.config.servicePort}`);
   }
@@ -349,13 +349,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _registerRoutes
-  * @summary Register routes
-  * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
-  * @private
-  * @param {array} routes - array of routes
-  * @return {object} Promise - resolving or rejecting
-  */
+   * @name _registerRoutes
+   * @summary Register routes
+   * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
+   * @private
+   * @param {array} routes - array of routes
+   * @return {object} Promise - resolving or rejecting
+   */
   _registerRoutes(routes) {
     return new Promise((resolve, reject) => {
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
@@ -401,12 +401,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getRoutes
-  * @summary Retrieves a array list of routes
-  * @param {string} serviceName - name of service to retreieve list of routes.
-  *                 If param is undefined, then the current serviceName is used.
-  * @return {object} Promise - resolving to array of routes or rejection
-  */
+   * @name _getRoutes
+   * @summary Retrieves a array list of routes
+   * @param {string} serviceName - name of service to retreieve list of routes.
+   *                 If param is undefined, then the current serviceName is used.
+   * @return {object} Promise - resolving to array of routes or rejection
+   */
   _getRoutes(serviceName) {
     if (serviceName === undefined) {
       serviceName = this.serviceName;
@@ -424,10 +424,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getAllServiceRoutes
-  * @summary Retrieve all service routes.
-  * @return {object} Promise - resolving to an object with keys and arrays of routes
-  */
+   * @name _getAllServiceRoutes
+   * @summary Retrieve all service routes.
+   * @return {object} Promise - resolving to an object with keys and arrays of routes
+   */
   _getAllServiceRoutes() {
     return new Promise((resolve, reject) => {
       let promises = [];
@@ -458,12 +458,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _matchRoute
-  * @summary Matches a route path to a list of registered routes
-  * @private
-  * @param {string} routePath - a URL path to match
-  * @return {boolean} match - true if match, false if not
-  */
+   * @name _matchRoute
+   * @summary Matches a route path to a list of registered routes
+   * @private
+   * @param {string} routePath - a URL path to match
+   * @return {boolean} match - true if match, false if not
+   */
   _matchRoute(routePath) {
     let match;
     this.registeredRoutes.forEach((route) => {
@@ -476,10 +476,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _flushRoutes
-  * @summary Delete's the services routes.
-  * @return {object} Promise - resolving or rejection
-  */
+   * @name _flushRoutes
+   * @summary Delete's the services routes.
+   * @return {object} Promise - resolving or rejection
+   */
   _flushRoutes() {
     return new Promise((resolve, reject) => {
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
@@ -840,10 +840,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getInstanceID
-  * @summary Return the instance id for this process
-  * @return {number} id - instanceID
-  */
+   * @name _getInstanceID
+   * @summary Return the instance id for this process
+   * @return {number} id - instanceID
+   */
   _getInstanceID() {
     return this.instanceID;
   }
@@ -930,13 +930,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _chooseServiceInstance
-  * @summary Choose an instance from a list of service instances.
-  * @private
-  * @param {array} instanceList - array list of service instances
-  * @param {string} defaultInstance - default instance
-  * @return {object} promise - resolved or rejected
-  */
+   * @name _chooseServiceInstance
+   * @summary Choose an instance from a list of service instances.
+   * @private
+   * @param {array} instanceList - array list of service instances
+   * @param {string} defaultInstance - default instance
+   * @return {object} promise - resolved or rejected
+   */
   _chooseServiceInstance(instanceList, defaultInstance) {
     return new Promise((resolve, reject) => {
       let instance;
@@ -1082,11 +1082,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _sendMessageThroughChannel
-  * @summary Sends a message to a redis pubsub channel
-  * @param {string} channel - channel name
-  * @param {object} message - UMF formatted message object
-  */
+   * @name _sendMessageThroughChannel
+   * @summary Sends a message to a redis pubsub channel
+   * @param {string} channel - channel name
+   * @param {object} message - UMF formatted message object
+   */
   _sendMessageThroughChannel(channel, message) {
     let messageChannel = redis.createClient(this.config.redis.port, this.config.redis.url);
     if (messageChannel) {
@@ -1106,7 +1106,10 @@ class Hydra extends EventEmitter {
    */
   _sendMessage(message) {
     return new Promise((resolve, reject) => {
-      let { serviceName, instance } = UMFMessage.parseRoute(message.to);
+      let {
+        serviceName,
+        instance
+      } = UMFMessage.parseRoute(message.to);
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
@@ -1165,7 +1168,9 @@ class Hydra extends EventEmitter {
    */
   _sendBroadcastMessage(message) {
     return new Promise((resolve, reject) => {
-      let { serviceName } = UMFMessage.parseRoute(message.to);
+      let {
+        serviceName
+      } = UMFMessage.parseRoute(message.to);
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
@@ -1182,11 +1187,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _queueMessage
-  * @summary Queue a message
-  * @param {object} message - UMF message to queue
-  * @return {promise} promise - resolving to the message that was queued or a rejection.
-  */
+   * @name _queueMessage
+   * @summary Queue a message
+   * @param {object} message - UMF message to queue
+   * @return {promise} promise - resolving to the message that was queued or a rejection.
+   */
   _queueMessage(message) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
@@ -1213,11 +1218,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getQueuedMessage
-  * @summary retrieve a queued message
-  * @param {string} serviceName who's queue might provide a message
-  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-  */
+   * @name _getQueuedMessage
+   * @summary retrieve a queued message
+   * @param {string} serviceName who's queue might provide a message
+   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+   */
   _getQueuedMessage(serviceName) {
     return new Promise((resolve, reject) => {
       this.redisdb.rpoplpush(`${redisPreKey}:${serviceName}:mqrecieved`, `${redisPreKey}:${serviceName}:mqinprogress`, (err, data) => {
@@ -1232,13 +1237,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _markQueueMessage
-  * @summary Mark a queued message as either completed or not
-  * @param {object} message - message in question
-  * @param {boolean} completed - (true / false)
-  * @param {string} reason - if not completed this is the reason processing failed
-  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-  */
+   * @name _markQueueMessage
+   * @summary Mark a queued message as either completed or not
+   * @param {object} message - message in question
+   * @param {boolean} completed - (true / false)
+   * @param {string} reason - if not completed this is the reason processing failed
+   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+   */
   _markQueueMessage(message, completed, reason) {
     let serviceName = this._getServiceName();
     return new Promise((resolve, reject) => {
@@ -1267,16 +1272,16 @@ class Hydra extends EventEmitter {
   }
 
   /** **************************************************************
-  * Hydra private utility functions.
-  * ****************************************************************/
+   * Hydra private utility functions.
+   * ****************************************************************/
 
   /**
-  * @name _createServerResponseWithReason
-  * @summary Create a server response using an HTTP code and reason
-  * @param {number} httpCode - code using ServerResponse.HTTP_XXX
-  * @param {string} reason - reason description
-  * @return {object} response - response object for use with promise resolve and reject calls
-  */
+   * @name _createServerResponseWithReason
+   * @summary Create a server response using an HTTP code and reason
+   * @param {number} httpCode - code using ServerResponse.HTTP_XXX
+   * @param {string} reason - reason description
+   * @return {object} response - response object for use with promise resolve and reject calls
+   */
   _createServerResponseWithReason(httpCode, reason) {
     return serverResponse.createResponseObject(httpCode, {
       result: {
@@ -1286,10 +1291,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getRandomServicePort
-  * @summary Retrieves a random TCP/IP port.
-  * @return {number} port - new random socket port
-  */
+   * @name _getRandomServicePort
+   * @summary Retrieves a random TCP/IP port.
+   * @return {number} port - new random socket port
+   */
   _getRandomServicePort() {
     const maxSocketPort = 65535;
     const nonPriviliagePortBountry = 1024;
@@ -1359,9 +1364,9 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name _shutdown
-  * @summary Shutdown hydra safely.
-  */
+   * @name _shutdown
+   * @summary Shutdown hydra safely.
+   */
   shutdown() {
     super._shutdown();
   }
@@ -1425,10 +1430,10 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name getInstanceID
-  * @summary Return the instance id for this process
-  * @return {number} id - instanceID
-  */
+   * @name getInstanceID
+   * @summary Return the instance id for this process
+   * @return {number} id - instanceID
+   */
   getInstanceID() {
     return super._getInstanceID();
   }
@@ -1531,64 +1536,64 @@ class IHydra extends Hydra {
 
 
   /**
-  * @name registerRoutes
-  * @summary Register routes
-  * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
-  * @param {array} routes - array of routes
-  * @return {object} Promise - resolving or rejecting
-  */
+   * @name registerRoutes
+   * @summary Register routes
+   * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
+   * @param {array} routes - array of routes
+   * @return {object} Promise - resolving or rejecting
+   */
   registerRoutes(routes) {
     return super._registerRoutes(routes);
   }
 
   /**
-  * @name getAllServiceRoutes
-  * @summary Retrieve all service routes.
-  * @return {object} Promise - resolving to an object with keys and arrays of routes
-  */
+   * @name getAllServiceRoutes
+   * @summary Retrieve all service routes.
+   * @return {object} Promise - resolving to an object with keys and arrays of routes
+   */
   getAllServiceRoutes() {
     return super._getAllServiceRoutes();
   }
 
   /**
-  * @name matchRoute
-  * @summary Matches a route path to a list of registered routes
-  * @private
-  * @param {string} routePath - a URL path to match
-  * @return {boolean} match - true if match, false if not
-  */
+   * @name matchRoute
+   * @summary Matches a route path to a list of registered routes
+   * @private
+   * @param {string} routePath - a URL path to match
+   * @return {boolean} match - true if match, false if not
+   */
   matchRoute(routePath) {
     return super._matchRoute(routePath);
   }
 
   /**
-  * @name queueMessage
-  * @summary Queue a message
-  * @param {object} message - UMF message to queue
-  * @return {promise} promise - resolving to the message that was queued or a rejection.
-  */
+   * @name queueMessage
+   * @summary Queue a message
+   * @param {object} message - UMF message to queue
+   * @return {promise} promise - resolving to the message that was queued or a rejection.
+   */
   queueMessage(message) {
     return super._queueMessage(message);
   }
 
   /**
-  * @name getQueuedMessage
-  * @summary retrieve a queued message
-  * @param {string} serviceName who's queue might provide a message
-  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-  */
+   * @name getQueuedMessage
+   * @summary retrieve a queued message
+   * @param {string} serviceName who's queue might provide a message
+   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+   */
   getQueuedMessage(serviceName) {
     return super._getQueuedMessage(serviceName);
   }
 
   /**
-  * @name markQueueMessage
-  * @summary Mark a queued message as either completed or not
-  * @param {object} message - message in question
-  * @param {boolean} completed - (true / false)
-  * @param {string} reason - if not completed this is the reason processing failed
-  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-  */
+   * @name markQueueMessage
+   * @summary Mark a queued message as either completed or not
+   * @param {object} message - message in question
+   * @param {boolean} completed - (true / false)
+   * @param {string} reason - if not completed this is the reason processing failed
+   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+   */
   markQueueMessage(message, completed, reason) {
     return super._markQueueMessage(message, completed, reason);
   }
