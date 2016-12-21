@@ -90,15 +90,16 @@ class Hydra extends EventEmitter {
    * @param {object} config - configuration object containing hydra specific keys/values
    * @return {object} promise - resolves with this._init
    */
-  init(config) {
-    return new Promise((resolve, reject) => {
-      Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
-        .then((...results) => {
-          resolve(this._init(config));
-        })
-        .catch(err => this._logMessage('error', err.toString()));
-    });
-  }
+   init(config) {
+     return new Promise((resolve, reject) => {
+       Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
+         .then((...results) => {
+           return this._init(config);
+         })
+         .then(() => resolve())
+         .catch(err => this._logMessage('error', err.toString()));
+     });
+   }
 
   /**
    * @name _init
