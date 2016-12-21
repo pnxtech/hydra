@@ -9,6 +9,8 @@ Promise.series = (iterable, action) => {
   );
 };
 
+const dns = require('dns');
+const net = require('net');
 const EventEmitter = require('events');
 const redis = require('redis');
 const moment = require('moment');
@@ -127,8 +129,16 @@ class Hydra extends EventEmitter {
           this.serviceDescription = this.config.serviceDescription || 'not specified';
           this.serviceVersion = this.config.serviceVersion || 'not specified';
 
+          // if serviceIP field contains a name rather than a dotted IP address
+          // then use DNS to resolve the name to an IP address.
+          if (this.config.serviceIP && this.config.serviceIP !== '' &&
+              net.isIP(this.config.serviceIP) === 0) {
+            dns.lookup(this.config.serviceIP, (err, result) => {
+              this.config.serviceIP = result;
+            });
+          }
           if (!this.config.serviceIP || this.config.serviceIP === '') {
-            require('dns').lookup(require('os').hostname(), (err, address, fam) => {
+            dns.lookup(require('os').hostname(), (err, address, fam) => {
               this.config.serviceIP = address;
               this._updateInstanceData();
               ready();

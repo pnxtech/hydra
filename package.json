@@ -1,6 +1,6 @@
 {
   "name": "fwsp-hydra",
-  "version": "0.12.0",
+  "version": "0.12.2",
   "author": "Carlos Justiniano",
   "contributors": [
     {
@@ -18,8 +18,8 @@
       "github": "artemkochnev",
       "email": "artemkochnev@gmail.com"
     }
-  ],  
-  "description": "A library for building microservices - built on Redis",
+  ],
+  "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
   "keywords": [
     "flywheelsports",
     "hydra",
