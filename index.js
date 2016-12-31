@@ -117,6 +117,11 @@ class Hydra extends EventEmitter {
           .catch(err => this._logMessage('error', err.toString()));
       };
       this._connectToRedis(config);
+
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
         if (err) {
           reject(new Error('Unable to select redis db.'));
@@ -168,7 +173,6 @@ class Hydra extends EventEmitter {
    */
   _shutdown() {
     this._logMessage('error', 'Service is shutting down.');
-
     if (this.mcMessageChannelClient) {
       this.mcMessageChannelClient.unsubscribe();
       this.mcMessageChannelClient.quit();
@@ -177,10 +181,11 @@ class Hydra extends EventEmitter {
       this.mcDirectMessageChannelClient.unsubscribe();
       this.mcDirectMessageChannelClient.quit();
     }
-
-    this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
-      this.redisdb.quit();
-    });
+    if (this.redisdb) {
+      this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
+        this.redisdb.quit();
+      });
+    }
   }
 
   /**
@@ -260,8 +265,7 @@ class Hydra extends EventEmitter {
    */
   _getServiceName() {
     if (!this.initialized) {
-      let err = new Error('init() not called, Hydra requires a configuration object.');
-      throw err;
+      throw new Error('init() not called, Hydra requires a configuration object.');
     }
     return this.serviceName;
   }
@@ -290,8 +294,12 @@ class Hydra extends EventEmitter {
         return;
       }
 
-      // It's critical that the current redis db be selected before we continue!
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
+        // It's critical that the current redis db be selected before we continue!
         if (err) {
           reject(new Error('Unable to select redis db.'));
           return;
@@ -358,6 +366,10 @@ class Hydra extends EventEmitter {
    */
   _registerRoutes(routes) {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
       let trans = this.redisdb.multi();
       routes.forEach((route) => {
@@ -430,6 +442,10 @@ class Hydra extends EventEmitter {
    */
   _getAllServiceRoutes() {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       let promises = [];
       let serviceNames = [];
       this._getKeys('*:routes')
@@ -661,6 +677,10 @@ class Hydra extends EventEmitter {
    */
   _getServices() {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       this._getKeys('*:service')
         .then((services) => {
           let trans = this.redisdb.multi();
@@ -689,6 +709,10 @@ class Hydra extends EventEmitter {
    */
   _getServiceNodes() {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       let now = moment.now();
       this.redisdb.hgetall(`${redisPreKey}:nodes`, (err, data) => {
         if (err) {
@@ -717,6 +741,10 @@ class Hydra extends EventEmitter {
    */
   _findService(name) {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       this.redisdb.get(`${redisPreKey}:${name}:service`, (err, result) => {
         if (err) {
           reject(err);
@@ -901,6 +929,10 @@ class Hydra extends EventEmitter {
    */
   _getServiceHealthAll() {
     return new Promise((resolve, reject) => {
+      if (!this.redisdb) {
+        reject(new Error('No Redis connection'));
+        return;
+      }
       this._getServices()
         .then((services) => {
           let listOfPromises = [];
@@ -1533,7 +1565,6 @@ class IHydra extends Hydra {
   sendBroadcastMessage(message) {
     return super._sendBroadcastMessage(message);
   }
-
 
   /**
    * @name registerRoutes
