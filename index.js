@@ -771,9 +771,7 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - which resolves with service presence
    */
   _checkServicePresence(name) {
-    if (name === undefined) {
-      name = this._getServiceName();
-    }
+    name = name || this._getServiceName();
     return new Promise((resolve, reject) => {
       this._getKeys(`*:${name}:*:presence`)
         .then((instances) => {
@@ -791,7 +789,11 @@ class Hydra extends EventEmitter {
               reject(err);
             } else {
               let instanceList = result.map((instance) => {
-                return Utils.safeJSONParse(instance);
+                let instanceObj = Utils.safeJSONParse(instance);
+                if (instanceObj) {
+                  instanceObj.updatedOnTS = moment(instanceObj.updatedOn).unix();
+                }
+                return instanceObj;
               });
               resolve(instanceList);
             }
@@ -817,6 +819,9 @@ class Hydra extends EventEmitter {
           if (result === null) {
             reject(new Error(`Service instance for ${name} is unavailable`));
           } else {
+            if (result.length > 1) {
+              result.sort((a,b) => { return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0); });
+            }
             resolve(result);
           }
         })
@@ -972,7 +977,6 @@ class Hydra extends EventEmitter {
   _chooseServiceInstance(instanceList, defaultInstance) {
     return new Promise((resolve, reject) => {
       let instance;
-      let instanceIndex = Math.floor(Math.random() * instanceList.length);
 
       if (defaultInstance) {
         for (let i = 0; i < instanceList.length; i++) {
@@ -983,10 +987,7 @@ class Hydra extends EventEmitter {
         }
       }
 
-      if (!instance) {
-        instance = instanceList[instanceIndex];
-      }
-
+      instance = instance || instanceList[0];
       this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, result) => {
         if (err) {
           reject(err);
@@ -1000,6 +1001,67 @@ class Hydra extends EventEmitter {
           });
         }
       });
+    });
+  }
+
+  /**
+   * @name _tryAPIRequest
+   * @summary Attempt an API request to a hydra service.
+   * @description
+   * @param {array} instanceList - array of service instance objects
+   * @param {object} parsedRoute - parsed route
+   * @param {object} umfmsg - UMF message
+   * @param {function} resolve - promise resolve function
+   * @param {function} reject - promise reject function
+   */
+  _tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject) {
+    let instance;
+
+    if (parsedRoute) {
+      for (let i = 0; i < instanceList.length; i++) {
+        if (instanceList[i].instanceID === parsedRoute.instance) {
+          instance = instanceList[i];
+          break;
+        }
+      }
+    }
+
+    instance = instance || instanceList[0];
+
+    this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        this.redisdb.hget(`${redisPreKey}:nodes`, instance.instanceID, (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            instance = Utils.safeJSONParse(result);
+            let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
+            let options = {
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json; charset=UTF-8'
+              },
+              method: parsedRoute.httpMethod
+            };
+            if (umfmsg.authorization) {
+              options.headers.Authorization = umfmsg.authorization;
+            }
+            pRequest(options, umfmsg.body)
+              .then(response => resolve(response))
+              .catch((err) => {
+                instanceList.shift();
+                if (instanceList.length === 0) {
+                  resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+                } else {
+                  this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject);
+                }
+              });
+          }
+        });
+      }
     });
   }
 
@@ -1073,41 +1135,10 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
             return;
           }
-          return this._chooseServiceInstance(instances, parsedRoute.instance)
-            .then((instance) => {
-              let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
-              let options = {
-                url,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json; charset=UTF-8'
-                },
-                method: parsedRoute.httpMethod
-              };
-              if (umfmsg.authorization) {
-                options.headers.Authorization = umfmsg.authorization;
-              }
-              return pRequest(options, umfmsg.body)
-                .then((response) => {
-                  resolve(response);
-                })
-                .catch((err) => {
-                  resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
-                });
-            })
-            .catch((err) => {
-              resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
-            });
+          this._tryAPIRequest(instances, parsedRoute, umfmsg, resolve, reject);
+          return 0;
         })
         .catch((err) => {
-          // Offer this later when queues are added back in!
-          //
-          // if (message.body.fallbackToQueue) {
-          //   this._sendServiceMessage(message);
-          //   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_CREATED, 'Message was queued'));
-          // } else {
-          //   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
-          // }
           resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
         });
     });
@@ -1151,7 +1182,7 @@ class Hydra extends EventEmitter {
           if (instance && instance !== '') {
             this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
           } else {
-            let serviceInstance = instances[Math.floor(Math.random() * instances.length)];
+            let serviceInstance = instances[0];
             this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
           }
           resolve();
