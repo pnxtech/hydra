@@ -7,7 +7,7 @@ It was announced at [EmpireNode 2016](http://empirenode.org/).
 
 A key goal in Hydra is to simplify building Node-based distributed applications.
 
-Rather watch a video - than read the docs? See our [Introduction to Hydra](https://www.youtube.com/watch?v=dHFQxrc4Fnk) video on YouTube.
+There's a Hydra tutorial on the [RisingStack community site](https://community.risingstack.com/tutorial-building-expressjs-based-microservices-using-hydra/). Rather watch a video - than read the docs? See our [Introduction to Hydra](https://www.youtube.com/watch?v=dHFQxrc4Fnk) video on YouTube.
 
 > Hydra replies on an instance of Redis, if you need to learn more about Redis, see our [Redis quick start guide](https://youtu.be/eX7EamF_WuA).
 
