@@ -137,13 +137,13 @@ class Hydra extends EventEmitter {
 
           // if serviceIP field contains a name rather than a dotted IP address
           // then use DNS to resolve the name to an IP address.
-          if (this.config.serviceIP && this.config.serviceIP !== '' &&
-            net.isIP(this.config.serviceIP) === 0) {
+          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
             dns.lookup(this.config.serviceIP, (err, result) => {
               this.config.serviceIP = result;
+              this._updateInstanceData();
+              ready();
             });
-          }
-          if (!this.config.serviceIP || this.config.serviceIP === '') {
+          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
             dns.lookup(require('os').hostname(), (err, address, fam) => {
               this.config.serviceIP = address;
               this._updateInstanceData();
