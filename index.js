@@ -97,7 +97,10 @@ class Hydra extends EventEmitter {
           return this._init(config);
         })
         .then(() => resolve())
-        .catch(err => this._logMessage('error', err.toString()));
+        .catch((err) => {
+          this._logMessage('error', err.toString());
+          reject(err);
+        });
     });
   }
 
@@ -116,45 +119,47 @@ class Hydra extends EventEmitter {
           })
           .catch(err => this._logMessage('error', err.toString()));
       };
-      this._connectToRedis(config);
-
-      if (!this.redisdb) {
-        reject(new Error('No Redis connection'));
-        return;
-      }
-      this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
-        if (err) {
-          reject(new Error('Unable to select redis db.'));
-        } else {
-          this.config = config;
-          this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
-          this.serviceName = config.serviceName;
-          if (this.serviceName && this.serviceName.length > 0) {
-            this.serviceName = this.serviceName.toLowerCase();
+      this.config = config;
+      this._connectToRedis(this.config)
+        .then(() => {
+          if (!this.redisdb) {
+            reject(new Error('No Redis connection'));
+            return;
           }
-          this.serviceDescription = this.config.serviceDescription || 'not specified';
-          this.serviceVersion = this.config.serviceVersion || 'not specified';
+          this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
+            if (err) {
+              reject(new Error('Unable to select redis db.'));
+            } else {
+              this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
+              this.serviceName = config.serviceName;
+              if (this.serviceName && this.serviceName.length > 0) {
+                this.serviceName = this.serviceName.toLowerCase();
+              }
+              this.serviceDescription = this.config.serviceDescription || 'not specified';
+              this.serviceVersion = this.config.serviceVersion || 'not specified';
 
-          // if serviceIP field contains a name rather than a dotted IP address
-          // then use DNS to resolve the name to an IP address.
-          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-            dns.lookup(this.config.serviceIP, (err, result) => {
-              this.config.serviceIP = result;
-              this._updateInstanceData();
-              ready();
-            });
-          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-            dns.lookup(require('os').hostname(), (err, address, fam) => {
-              this.config.serviceIP = address;
-              this._updateInstanceData();
-              ready();
-            });
-          } else {
-            this._updateInstanceData();
-            ready();
-          }
-        }
-      });
+              // if serviceIP field contains a name rather than a dotted IP address
+              // then use DNS to resolve the name to an IP address.
+              if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+                dns.lookup(this.config.serviceIP, (err, result) => {
+                  this.config.serviceIP = result;
+                  this._updateInstanceData();
+                  ready();
+                });
+              } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+                dns.lookup(require('os').hostname(), (err, address, fam) => {
+                  this.config.serviceIP = address;
+                  this._updateInstanceData();
+                  ready();
+                });
+              } else {
+                this._updateInstanceData();
+                ready();
+              }
+            }
+          });
+        })
+        .catch(err => reject(err));
     });
   }
 
@@ -193,49 +198,55 @@ class Hydra extends EventEmitter {
    * @summary Configure access to redis and monitor emitted events.
    * @private
    * @param {object} config - redis client configuration
+   * @return {object} promise - resolves or reject
    */
   _connectToRedis(config) {
-    let redisConfig = Object.assign({
-      db: HYDRA_REDIS_DB,
-      maxReconnectionPeriod: 60,
-      maxDelayBetweenReconnections: 5
-    }, config.redis);
+    return new Promise((resolve, reject) => {
+      let redisConfig = Object.assign({
+        db: HYDRA_REDIS_DB,
+        maxReconnectionPeriod: 15,
+        maxDelayBetweenReconnections: 5
+      }, config.redis);
 
-    HYDRA_REDIS_DB = redisConfig.db;
-    try {
-      let redisOptions = {
-        retry_strategy: (options) => {
-          if (options.total_retry_time > (1000 * redisConfig.maxReconnectionPeriod)) {
-            this._logMessage('error', 'Max redis connection retry period exceeded.');
-            process.exit(-10);
-            return;
+      HYDRA_REDIS_DB = redisConfig.db;
+      try {
+        let redisOptions = {
+          retry_strategy: (options) => {
+            if (options.total_retry_time > (1000 * redisConfig.maxReconnectionPeriod)) {
+              this._logMessage('error', 'Max redis connection retry period exceeded.');
+              reject(new Error('Unable to establish a connection to Redis'));
+              return;
+            }
+            // reconnect after
+            let reconnectionDelay = Math.floor(Math.random() * redisConfig.maxDelayBetweenReconnections * 1000) + 1000;
+            return reconnectionDelay;
           }
-          // reconnect after
-          let reconnectionDelay = Math.floor(Math.random() * redisConfig.maxDelayBetweenReconnections * 1000) + 1000;
-          return reconnectionDelay;
-        }
-      };
-      this.redisdb = redis.createClient(redisConfig.port, redisConfig.url, redisOptions);
-      this.redisdb
-        .on('connect', () => {
-          this._logMessage('info', 'Successfully reconnected to redis server');
-          this.redisdb.select(redisConfig.db);
-        })
-        .on('reconnecting', () => {
-          this._logMessage('error', 'Reconnecting to redis server...');
-        })
-        .on('warning', (warning) => {
-          this._logMessage('error', `Redis warning: ${warning}`);
-        })
-        .on('end', () => {
-          this._logMessage('error', 'Established Redis server connection has closed');
-        })
-        .on('error', (err) => {
-          this._logMessage('error', `Redis error: ${err}`);
-        });
-    } catch (e) {
-      this._logMessage('error', `Redis error: ${e.message}`);
-    }
+        };
+        this.redisdb = redis.createClient(redisConfig.port, redisConfig.url, redisOptions);
+        this.redisdb
+          .on('connect', () => {
+            this._logMessage('info', 'Successfully reconnected to redis server');
+            this.redisdb.select(redisConfig.db);
+            resolve();
+          })
+          .on('reconnecting', () => {
+            this._logMessage('error', 'Reconnecting to redis server...');
+          })
+          .on('warning', (warning) => {
+            this._logMessage('error', `Redis warning: ${warning}`);
+          })
+          .on('end', () => {
+            this._logMessage('error', 'Established Redis server connection has closed');
+          })
+          .on('error', (err) => {
+            this._logMessage('error', `Redis error: ${err}`);
+          });
+      } catch (e) {
+        let message = `Redis error: ${e.message}`;
+        this._logMessage('error', message);
+        reject(e);
+      }
+    });
   }
 
   /**
