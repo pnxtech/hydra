@@ -73,7 +73,7 @@ hydra.init(initObject);
 The initialization object consist of the following fields:
 
 ```javascript
-hydra: {
+{
   serviceName: 'hydramcp',
   serviceDescription: 'Hydra Master Control Program',
   serviceIP: '',
