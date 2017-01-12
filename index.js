@@ -227,7 +227,18 @@ class Hydra extends EventEmitter {
    */
   _connectToRedis(config) {
     return new Promise((resolve, reject) => {
-      let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, config.redis, {
+      let url = {};
+      if (config.redis.url) {
+        let parsedUrl = require('redis-url').parse(config.redis.url);
+        url = {
+          host: parsedUrl.hostname,
+          port: parsedUrl.port,
+          db: parsedUrl.database,
+          password: parsedUrl.password
+        };
+        delete config.redis.url;
+      }
+      let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, url, config.redis, {
         retry_strategy: this._redisRetryStrategy(config.redis.retry_strategy, reject)
       });
       HYDRA_REDIS_DB = redisConfig.db;

@@ -46,7 +46,8 @@
     "humanize-duration": "3.9.1",
     "lodash": "4.17.2",
     "moment": "2.15.2",
-    "redis": "2.6.2",
+    "redis": "2.6.3",
+    "redis-url": "1.2.1",
     "request": "2.76.0",
     "route-parser": "0.0.5"
   },
