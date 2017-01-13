@@ -29,9 +29,10 @@ In Hydra, a service instance is simply a process which uses Hydra to handle micr
 * [Using Hydra](#using-hydra)
    * [Importing Hydra](#importing-hydra)
    * [Initialization](#initialization)
+       * [Redis Configuration](#redis-configuration)
    * [Hydra modes](#hydra-modes)
-         * [Service mode](#service-mode)
-         * [Consumer mode](#consumer-mode)
+       * [Service mode](#service-mode)
+       * [Consumer mode](#consumer-mode)
    * [Service Discovery](#service-discovery)
    * [Presence](#presence)
    * [Health and Presence](#health-and-presence)
@@ -80,7 +81,7 @@ The initialization object consist of the following fields:
   servicePort: 0,
   serviceType: 'mcp',
   redis: {
-    url: '127.0.0.1',
+    host: '127.0.0.1',
     port: 6379,
     db: 0
   }
@@ -106,20 +107,20 @@ In an actual production system the Hydra JSON might be embedded in a larger conf
 ```javascript
 exports.value = {
   appServiceName: 'hydramcp',
-  cluster: false,  
+  cluster: false,
   environment: 'development',
   maxSockets: 500,
   logPath: '',
   hydra: {
     serviceName: 'hydramcp',
     serviceDescription: 'Hydra Master Control Program',
-    serviceVersion: '1.0.0',    
+    serviceVersion: '1.0.0',
     serviceIP: '',
     servicePort: 0,
     serviceType: 'mcp',
     serviceWorker: false,
     redis: {
-      url: '127.0.0.1',
+      host: '127.0.0.1',
       port: 6379,
       db: 0
     }
@@ -132,6 +133,45 @@ When using this approach simply pass the hydra branch during initialization:
 ```javascript
 hydra.init(config.hydra);
 ```
+
+### Redis Configuration
+
+In addition to `host`, `port`, and `db`, you can pass any options supported by the [node redis client](https://github.com/NodeRedis/node_redis) `createClient` method.
+
+The exception to this is `retry_strategy`, which takes a function argument in `redis.createClient`. Hydra provides a retry_strategy (`hydra._redisRetryStrategy`), which is configured via the `hydra.redis.retry_strategy` option rather than being passed directly to `redis.createClient`:
+
+```javascript
+  redis: {
+    host: "127.0.0.1",
+    port: 6379,
+    db: 15,
+    retry_strategy: {
+      maxReconnectionPeriod: 15,
+      maxDelayBetweenReconnections: 5
+    }
+  }
+```
+
+If you want to implement your own retry strategy, extend Hydra and override the `_redisRetryStrategy` method.
+
+You also have the option of using the `url` parameter instead of `host`, `port`, `db`, and `password`. See the [IANA registration](http://www.iana.org/assignments/uri-schemes/prov/redis) for details. The following is equivalent to the above host/port/db:
+
+```javascript
+redis: {
+  url: 'redis://127.0.0.1:6379/15'
+}
+```
+
+Note: If you pass in *both* a `url` and some combination of `host`, `port`, `db`, and `password`, the values in `url` will be overridden by the more specific entries:
+
+```javascript
+redis: {
+  url: 'redis://127.0.0.1:6379/15',
+  db: 10
+}
+```
+
+This will connect to database `10` instead of database `15`.
 
 ## Hydra modes
 
@@ -226,7 +266,7 @@ The HydraMCP web application demonstrates how Hydra services can be monitored. T
 
 The latter method is recommended as it is expected to be more resilient to future underlying changes to how Hydra stores data in Redis.
 
-The follow methods facilitate service introspection and control.  
+The follow methods facilitate service introspection and control.
 
 Method | Description
 --- | ---

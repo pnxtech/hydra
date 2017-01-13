@@ -194,6 +194,31 @@ class Hydra extends EventEmitter {
   }
 
   /**
+   * @name _redisRetryStrategy
+   * @summary Provides retry_strategy for redis connection
+   * @private
+   * @param {object} retryOptions - options for retry strategy
+   * @param {function} reject - Promise rejection function for _connectToRedis
+   * @return {function} redis.createClient retry_strategy
+   */
+  _redisRetryStrategy(retryOptions, reject) {
+    retryOptions = Object.assign({
+      maxReconnectionPeriod: 15,
+      maxDelayBetweenReconnections: 5
+    }, retryOptions);
+    return options => {
+      if (options.total_retry_time > (1000 * retryOptions.maxReconnectionPeriod)) {
+        this._logMessage('error', 'Max redis connection retry period exceeded.');
+        reject(new Error('Unable to establish a connection to Redis'));
+        return;
+      }
+      // reconnect after
+      let reconnectionDelay = Math.floor(Math.random() * retryOptions.maxDelayBetweenReconnections * 1000) + 1000;
+      return reconnectionDelay;
+    };
+  }
+
+  /**
    * @name _connectToRedis
    * @summary Configure access to redis and monitor emitted events.
    * @private
@@ -202,27 +227,23 @@ class Hydra extends EventEmitter {
    */
   _connectToRedis(config) {
     return new Promise((resolve, reject) => {
-      let redisConfig = Object.assign({
-        db: HYDRA_REDIS_DB,
-        maxReconnectionPeriod: 15,
-        maxDelayBetweenReconnections: 5
-      }, config.redis);
-
+      let url = {};
+      if (config.redis.url) {
+        let parsedUrl = require('redis-url').parse(config.redis.url);
+        url = {
+          host: parsedUrl.hostname,
+          port: parsedUrl.port,
+          db: parsedUrl.database,
+          password: parsedUrl.password
+        };
+        delete config.redis.url;
+      }
+      let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, url, config.redis, {
+        retry_strategy: this._redisRetryStrategy(config.redis.retry_strategy, reject)
+      });
       HYDRA_REDIS_DB = redisConfig.db;
       try {
-        let redisOptions = {
-          retry_strategy: (options) => {
-            if (options.total_retry_time > (1000 * redisConfig.maxReconnectionPeriod)) {
-              this._logMessage('error', 'Max redis connection retry period exceeded.');
-              reject(new Error('Unable to establish a connection to Redis'));
-              return;
-            }
-            // reconnect after
-            let reconnectionDelay = Math.floor(Math.random() * redisConfig.maxDelayBetweenReconnections * 1000) + 1000;
-            return reconnectionDelay;
-          }
-        };
-        this.redisdb = redis.createClient(redisConfig.port, redisConfig.url, redisOptions);
+        this.redisdb = redis.createClient(redisConfig);
         this.redisdb
           .on('connect', () => {
             this._logMessage('info', 'Successfully reconnected to redis server');
@@ -309,59 +330,51 @@ class Hydra extends EventEmitter {
         reject(new Error('No Redis connection'));
         return;
       }
-      this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
-        // It's critical that the current redis db be selected before we continue!
+      this.isService = true;
+      let serviceName = this.serviceName;
+
+      let serviceEntry = Utils.safeJSONStringify({
+        serviceName,
+        type: this.config.serviceType,
+        registeredOn: this._getTimeStamp()
+      });
+      this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, result) => {
         if (err) {
-          reject(new Error('Unable to select redis db.'));
-          return;
+          reject(new Error('Unable to set :service key in redis db.'));
         } else {
-          this.isService = true;
-          let serviceName = this.serviceName;
-
-          let serviceEntry = Utils.safeJSONStringify({
-            serviceName,
-            type: this.config.serviceType,
-            registeredOn: this._getTimeStamp()
-          });
-          this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, result) => {
-            if (err) {
-              reject(new Error('Unable to set :service key in redis db.'));
-            } else {
-              // Setup service message courier channels
-              this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
-              this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
-              this.mcMessageChannelClient.on('message', (channel, message) => {
-                let msg = Utils.safeJSONParse(message);
-                if (msg) {
-                  let umfMsg = UMFMessage.createMessage(msg);
-                  this.emit('message', umfMsg.toShort());
-                }
-              });
-
-              this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
-              this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
-              this.mcDirectMessageChannelClient.on('message', (channel, message) => {
-                let msg = Utils.safeJSONParse(message);
-                if (msg) {
-                  let umfMsg = UMFMessage.createMessage(msg);
-                  this.emit('message', umfMsg.toShort());
-                }
-              });
-
-              // Schedule periodic updates
-              setInterval(this._updatePresence, PRESENCE_UPDATE_INTERVAL);
-              setInterval(this._updateHealthCheck, HEALTH_UPDATE_INTERVAL);
-
-              resolve({
-                serviceName: this.serviceName,
-                serviceIP: this.config.serviceIP,
-                servicePort: this.config.servicePort
-              });
-
-              // Update presence immediately without waiting for next update interval.
-              this._updatePresence();
+          // Setup service message courier channels
+          this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+          this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
+          this.mcMessageChannelClient.on('message', (channel, message) => {
+            let msg = Utils.safeJSONParse(message);
+            if (msg) {
+              let umfMsg = UMFMessage.createMessage(msg);
+              this.emit('message', umfMsg.toShort());
             }
           });
+
+          this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+          this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
+          this.mcDirectMessageChannelClient.on('message', (channel, message) => {
+            let msg = Utils.safeJSONParse(message);
+            if (msg) {
+              let umfMsg = UMFMessage.createMessage(msg);
+              this.emit('message', umfMsg.toShort());
+            }
+          });
+
+          // Schedule periodic updates
+          setInterval(this._updatePresence, PRESENCE_UPDATE_INTERVAL);
+          setInterval(this._updateHealthCheck, HEALTH_UPDATE_INTERVAL);
+
+          resolve({
+            serviceName: this.serviceName,
+            serviceIP: this.config.serviceIP,
+            servicePort: this.config.servicePort
+          });
+
+          // Update presence immediately without waiting for next update interval.
+          this._updatePresence();
         }
       });
     });
