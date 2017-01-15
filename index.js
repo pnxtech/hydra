@@ -236,11 +236,14 @@ class Hydra extends EventEmitter {
           db: parsedUrl.database,
           password: parsedUrl.password
         };
-        delete config.redis.url;
       }
       let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, url, config.redis, {
         retry_strategy: this._redisRetryStrategy(config.redis.retry_strategy, reject)
       });
+      if (redisConfig.host) {
+        delete redisConfig.url;
+      }
+      this.redisConfig = redisConfig;
       HYDRA_REDIS_DB = redisConfig.db;
       try {
         this.redisdb = redis.createClient(redisConfig);
@@ -343,7 +346,7 @@ class Hydra extends EventEmitter {
           reject(new Error('Unable to set :service key in redis db.'));
         } else {
           // Setup service message courier channels
-          this.mcMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+          this.mcMessageChannelClient = redis.createClient(this.redisConfig);
           this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
           this.mcMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -353,7 +356,7 @@ class Hydra extends EventEmitter {
             }
           });
 
-          this.mcDirectMessageChannelClient = redis.createClient(this.config.redis.port, this.config.redis.url);
+          this.mcDirectMessageChannelClient = redis.createClient(this.redisConfig);
           this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
           this.mcDirectMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -1175,7 +1178,7 @@ class Hydra extends EventEmitter {
    * @param {object} message - UMF formatted message object
    */
   _sendMessageThroughChannel(channel, message) {
-    let messageChannel = redis.createClient(this.config.redis.port, this.config.redis.url);
+    let messageChannel = redis.createClient(this.redisConfig);
     if (messageChannel) {
       let msg = UMFMessage.createMessage(message);
       let strMessage = Utils.safeJSONStringify(msg.toShort());
