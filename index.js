@@ -47,6 +47,7 @@ class Hydra extends EventEmitter {
 
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
+    this.messageChannelPool = {};
     this.config = null;
     this.serviceName = '';
     this.serviceDescription = '';
@@ -58,9 +59,6 @@ class Hydra extends EventEmitter {
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
     this.registeredRoutes = [];
     this.registeredPlugins = [];
-
-    this.publisherChannels = {};
-    this.subscriberChannels = {};
   }
 
   /**
@@ -186,6 +184,9 @@ class Hydra extends EventEmitter {
       this.mcDirectMessageChannelClient.unsubscribe();
       this.mcDirectMessageChannelClient.quit();
     }
+    Object.keys(this.messageChannelPool).forEach((keyname) => {
+      this.messageChannelPool[keyname].quit();
+    });
     if (this.redisdb) {
       this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
         this.redisdb.quit();
@@ -1178,12 +1179,18 @@ class Hydra extends EventEmitter {
    * @param {object} message - UMF formatted message object
    */
   _sendMessageThroughChannel(channel, message) {
-    let messageChannel = redis.createClient(this.redisConfig);
+    let messageChannel;
+    let chash = Utils.stringHash(channel);
+    if (this.messageChannelPool[chash]) {
+      messageChannel = this.messageChannelPool[chash];
+    } else {
+      messageChannel = redis.createClient(this.redisConfig);
+      this.messageChannelPool[chash] = messageChannel;
+    }
     if (messageChannel) {
       let msg = UMFMessage.createMessage(message);
       let strMessage = Utils.safeJSONStringify(msg.toShort());
       messageChannel.publish(channel, strMessage);
-      messageChannel.quit();
     }
   }
 
