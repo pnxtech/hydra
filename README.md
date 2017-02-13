@@ -17,6 +17,10 @@ If you're just getting started with Node Microservices and you have ExpressJS ex
 
 Read the [Full documentation](documentation.md)
 
+### Join us on Slack!
+
+Are you using or planning on using Hydra on your project? Join us on Slack for more direct support. https://fwsp-hydra.slack.com
+
 ### Related projects
 
 * [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express): hydra for ExpressJS developers
