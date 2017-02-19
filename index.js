@@ -632,7 +632,7 @@ class Hydra extends EventEmitter {
     let map = {};
     let memory = util.inspect(process.memoryUsage());
 
-    memory = memory.replace(/[\ \{\}]/g, '');
+    memory = memory.replace(/[\ \{\}.|\n]/g, '');
     lines = memory.split(',');
 
     Array.from(lines, (line) => {
