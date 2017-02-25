@@ -527,7 +527,7 @@ class Hydra extends EventEmitter {
   _flushRoutes() {
     return new Promise((resolve, reject) => {
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
-      this.redisdb.delete(routesKey, (err, result) => {
+      this.redisdb.del(routesKey, (err, result) => {
         if (err) {
           reject(err);
         } else {
