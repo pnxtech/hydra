@@ -398,45 +398,45 @@ class Hydra extends EventEmitter {
         reject(new Error('No Redis connection'));
         return;
       }
-      let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
-      let trans = this.redisdb.multi();
-      routes.forEach((route) => {
-        trans.sadd(routesKey, route);
-      });
-      trans.exec((err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          return this._getRoutes()
-            .then((routeList) => {
-              if (routeList.length) {
-                this.registeredRoutes = [];
-                routeList.forEach((route) => {
-                  this.registeredRoutes.push(new Route(route));
-                });
-                if (this.serviceName !== 'hydra-router') {
-                  // let routers know that a new service route was registered
-                  resolve();
-                  return this._sendBroadcastMessage(UMFMessage.createMessage({
-                    to: 'hydra-router:/refresh',
-                    from: `${this.serviceName}:/`,
-                    body: {
-                      action: 'refresh',
-                      serviceName: this.serviceName
-                    }
-                  }));
+      this._flushRoutes().then(() => {
+        let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
+        let trans = this.redisdb.multi();
+        routes.forEach((route) => {
+          trans.sadd(routesKey, route);
+        });
+        trans.exec((err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            return this._getRoutes()
+              .then((routeList) => {
+                if (routeList.length) {
+                  this.registeredRoutes = [];
+                  routeList.forEach((route) => {
+                    this.registeredRoutes.push(new Route(route));
+                  });
+                  if (this.serviceName !== 'hydra-router') {
+                    // let routers know that a new service route was registered
+                    resolve();
+                    return this._sendBroadcastMessage(UMFMessage.createMessage({
+                      to: 'hydra-router:/refresh',
+                      from: `${this.serviceName}:/`,
+                      body: {
+                        action: 'refresh',
+                        serviceName: this.serviceName
+                      }
+                    }));
+                  } else {
+                    resolve();
+                  }
                 } else {
                   resolve();
                 }
-              } else {
-                resolve();
-              }
-            })
-            .catch((err) => {
-              reject(err);
-            });
-        }
-      });
+              })
+              .catch(reject);
+          }
+        });
+      }).catch(reject);
     });
   }
 
@@ -527,7 +527,7 @@ class Hydra extends EventEmitter {
   _flushRoutes() {
     return new Promise((resolve, reject) => {
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
-      this.redisdb.delete(routesKey, (err, result) => {
+      this.redisdb.del(routesKey, (err, result) => {
         if (err) {
           reject(err);
         } else {
