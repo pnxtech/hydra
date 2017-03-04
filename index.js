@@ -671,7 +671,7 @@ class Hydra extends EventEmitter {
       serviceName: this.serviceName || 'not a service',
       type,
       processID: process.pid,
-      message
+      msg: message
     };
 
     if (!suppressEmit) {
