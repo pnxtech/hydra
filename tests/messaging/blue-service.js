@@ -28,7 +28,7 @@ hydra.init(config.hydra)
           console.log(`Received object message: ${msg.mid}: ${JSON.stringify(msg)}`);
         });
         setInterval(() => {
-          hydra.sendMessage('red-service', hydra.createUMFMessage({
+          hydra.sendMessage(hydra.createUMFMessage({
             to: 'red-service:/',
             from: 'blue-service:/',
             body: {
