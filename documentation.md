@@ -349,7 +349,7 @@ let message = hydra.createUMFMessage({
     fileData: '{base64}'
   }
 });
-hydra.sendMessage('upload-service', message);
+hydra.sendMessage(message);
 ```
 
 The first parameter is the name of the service you want to send a message to, and the second parameter is a UMF formatted object containing a message.
@@ -635,12 +635,11 @@ Sends a message to all present instances of a  hydra service.
 /**
  * @name sendMessage
  * @summary Sends a message to all present instances of a  hydra service.
- * @param {string} serviceName - Name of service
  * @param {string | object} message - Plain string or UMF formatted message object
  * @return {promise} promise - resolved promise if sent or
  *                   error in rejected promise.
  */
-sendMessage(serviceName, message)
+sendMessage(message)
 ```
 
 
