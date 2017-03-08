@@ -47,7 +47,6 @@ class Hydra extends EventEmitter {
 
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
-    this.messageChannelPool = {};
     this.config = null;
     this.serviceName = '';
     this.serviceDescription = '';
@@ -59,6 +58,9 @@ class Hydra extends EventEmitter {
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
     this.registeredRoutes = [];
     this.registeredPlugins = [];
+
+    this.publisherChannels = {};
+    this.subscriberChannels = {};
   }
 
   /**
@@ -184,9 +186,6 @@ class Hydra extends EventEmitter {
       this.mcDirectMessageChannelClient.unsubscribe();
       this.mcDirectMessageChannelClient.quit();
     }
-    Object.keys(this.messageChannelPool).forEach((keyname) => {
-      this.messageChannelPool[keyname].quit();
-    });
     if (this.redisdb) {
       this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
         this.redisdb.quit();
@@ -238,7 +237,9 @@ class Hydra extends EventEmitter {
           password: parsedUrl.password
         };
       }
-      let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, url, config.redis, {
+      let redisConfig = Object.assign({
+        db: HYDRA_REDIS_DB
+      }, url, config.redis, {
         retry_strategy: this._redisRetryStrategy(config.redis.retry_strategy, reject)
       });
       if (redisConfig.host) {
@@ -848,7 +849,9 @@ class Hydra extends EventEmitter {
             reject(new Error(`Service instance for ${name} is unavailable`));
           } else {
             if (result.length > 1) {
-              result.sort((a,b) => { return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0); });
+              result.sort((a, b) => {
+                return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0);
+              });
             }
             resolve(result);
           }
@@ -1179,18 +1182,12 @@ class Hydra extends EventEmitter {
    * @param {object} message - UMF formatted message object
    */
   _sendMessageThroughChannel(channel, message) {
-    let messageChannel;
-    let chash = Utils.stringHash(channel);
-    if (this.messageChannelPool[chash]) {
-      messageChannel = this.messageChannelPool[chash];
-    } else {
-      messageChannel = redis.createClient(this.redisConfig);
-      this.messageChannelPool[chash] = messageChannel;
-    }
+    let messageChannel = redis.createClient(this.redisConfig);
     if (messageChannel) {
       let msg = UMFMessage.createMessage(message);
       let strMessage = Utils.safeJSONStringify(msg.toShort());
       messageChannel.publish(channel, strMessage);
+      messageChannel.quit();
     }
   }
 
