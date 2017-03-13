@@ -1,6 +1,6 @@
 {
   "name": "fwsp-hydra",
-  "version": "0.14.7",
+  "version": "0.15.0",
   "author": "Carlos Justiniano",
   "contributors": [
     {
@@ -41,14 +41,15 @@
     "bluebird": "3.5.0",
     "fwsp-jsutils": "1.0.9",
     "fwsp-prequest": "1.1.2",
+    "fwsp-redis-connection": "0.0.1",
     "fwsp-server-response": "2.2.3",
     "fwsp-umf-message": "0.4.3",
     "humanize-duration": "3.10.0",
     "lodash": "4.17.4",
     "moment": "2.17.1",
-    "redis": "2.6.5",
+    "redis": "2.7.0",
     "redis-url": "1.2.1",
-    "request": "2.80.0",
+    "request": "2.81.0",
     "route-parser": "0.0.5"
   },
   "devDependencies": {
