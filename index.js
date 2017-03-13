@@ -26,7 +26,7 @@ const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
 const UMFMessage = require('fwsp-umf-message');
 
-const RedisConnection = require('./redis');
+const RedisConnection = require('fwsp-redis-connection');
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';

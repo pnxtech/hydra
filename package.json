@@ -41,6 +41,7 @@
     "bluebird": "3.5.0",
     "fwsp-jsutils": "1.0.9",
     "fwsp-prequest": "1.1.2",
+    "fwsp-redis-connection": "0.0.1",
     "fwsp-server-response": "2.2.3",
     "fwsp-umf-message": "0.4.3",
     "humanize-duration": "3.10.0",
