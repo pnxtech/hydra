@@ -26,6 +26,8 @@ const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
 const UMFMessage = require('fwsp-umf-message');
 
+const RedisConnection = require('./redis');
+
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
@@ -195,31 +197,6 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _redisRetryStrategy
-   * @summary Provides retry_strategy for redis connection
-   * @private
-   * @param {object} retryOptions - options for retry strategy
-   * @param {function} reject - Promise rejection function for _connectToRedis
-   * @return {function} redis.createClient retry_strategy
-   */
-  _redisRetryStrategy(retryOptions, reject) {
-    retryOptions = Object.assign({
-      maxReconnectionPeriod: 15,
-      maxDelayBetweenReconnections: 5
-    }, retryOptions);
-    return options => {
-      if (options.total_retry_time > (1000 * retryOptions.maxReconnectionPeriod)) {
-        this._logMessage('error', 'Max redis connection retry period exceeded.');
-        reject(new Error('Unable to establish a connection to Redis'));
-        return;
-      }
-      // reconnect after
-      let reconnectionDelay = Math.floor(Math.random() * retryOptions.maxDelayBetweenReconnections * 1000) + 1000;
-      return reconnectionDelay;
-    };
-  }
-
-  /**
    * @name _connectToRedis
    * @summary Configure access to redis and monitor emitted events.
    * @private
@@ -227,33 +204,13 @@ class Hydra extends EventEmitter {
    * @return {object} promise - resolves or reject
    */
   _connectToRedis(config) {
-    return new Promise((resolve, reject) => {
-      let url = {};
-      if (config.redis.url) {
-        let parsedUrl = require('redis-url').parse(config.redis.url);
-        url = {
-          host: parsedUrl.hostname,
-          port: parsedUrl.port,
-          db: parsedUrl.database,
-          password: parsedUrl.password
-        };
-      }
-      let redisConfig = Object.assign({db: HYDRA_REDIS_DB}, url, config.redis, {
-        retry_strategy: this._redisRetryStrategy(config.redis.retry_strategy, reject)
-      });
-      if (redisConfig.host) {
-        delete redisConfig.url;
-      }
-      this.redisConfig = redisConfig;
-      HYDRA_REDIS_DB = redisConfig.db;
-      try {
-        this.redisdb = redis.createClient(redisConfig);
-        this.redisdb
-          .on('connect', () => {
-            this._logMessage('info', 'Successfully reconnected to redis server');
-            this.redisdb.select(redisConfig.db);
-            resolve();
-          })
+    let retryStrategy = config.redis.retry_strategy;
+    delete config.redis.retry_strategy;
+    let redisConnection = new RedisConnection(Object.assign({ db: HYDRA_REDIS_DB }, config.redis));
+    return redisConnection.connect(retryStrategy)
+      .then(client => {
+        this.redisdb = client;
+        client
           .on('reconnecting', () => {
             this._logMessage('error', 'Reconnecting to redis server...');
           })
@@ -266,12 +223,13 @@ class Hydra extends EventEmitter {
           .on('error', (err) => {
             this._logMessage('error', `Redis error: ${err}`);
           });
-      } catch (e) {
-        let message = `Redis error: ${e.message}`;
+        return client;
+      })
+      .catch(err => {
+        let message = `Redis error: ${err.message}`;
         this._logMessage('error', message);
-        reject(e);
-      }
-    });
+        throw err;
+      });
   }
 
   /**
@@ -848,7 +806,7 @@ class Hydra extends EventEmitter {
             reject(new Error(`Service instance for ${name} is unavailable`));
           } else {
             if (result.length > 1) {
-              result.sort((a,b) => { return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0); });
+              result.sort((a, b) => { return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0); });
             }
             resolve(result);
           }
