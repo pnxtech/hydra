@@ -1321,6 +1321,51 @@ class Hydra extends EventEmitter {
     });
   }
 
+  /**
+   * @name _getConfig
+   * @summary retrieve a stored configuration file
+   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+   * @return {promise} promise - resolving to a configuration file in object format
+   */
+  _getConfig(label) {
+    return new Promise((resolve, reject) => {
+      let parts = label.split(':');
+      if (parts.length !== 2) {
+        reject(new Error('label not in this form: myservice:0.1.1.'));
+      }
+      this.redisdb.hget(`${redisPreKey}:${parts[0]}:configs`, parts[1], (err, result) => {
+        if (err) {
+          reject(new Error('Unable to set :configs key in redis db.'));
+        } else {
+          resolve(Utils.safeJSONParse(result));
+        }
+      });
+    });
+  }
+
+  /**
+   * @name _putConfig
+   * @summary store a configuration file
+   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+   * @param {object} config - configuration object
+   * @return {promise} promise - resolving or rejecting.
+   */
+  _putConfig(label, config) {
+    return new Promise((resolve, reject) => {
+      let parts = label.split(':');
+      if (parts.length !== 2) {
+        reject(new Error('label not in this form: myservice:0.1.1.'));
+      }
+      this.redisdb.hset(`${redisPreKey}:${parts[0]}:configs`, `${parts[1]}`, Utils.safeJSONStringify(config), (err, result) => {
+        if (err) {
+          reject(new Error('Unable to set :configs key in redis db.'));
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
   /** **************************************************************
    * Hydra private utility functions.
    * ****************************************************************/
@@ -1645,6 +1690,27 @@ class IHydra extends Hydra {
    */
   markQueueMessage(message, completed, reason) {
     return super._markQueueMessage(message, completed, reason);
+  }
+
+  /**
+   * @name _getConfig
+   * @summary retrieve a stored configuration file
+   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+   * @return {promise} promise - resolving to a configuration file in object format
+   */
+  getConfig(label) {
+    return super._getConfig(label);
+  }
+
+  /**
+   * @name _putConfig
+   * @summary store a configuration file
+   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+   * @param {object} config - configuration object
+   * @return {promise} promise - resolving or rejecting.
+   */
+  putConfig(label, config) {
+    return super._putConfig(label, config);
   }
 }
 
