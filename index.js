@@ -126,38 +126,32 @@ class Hydra extends EventEmitter {
             reject(new Error('No Redis connection'));
             return;
           }
-          this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
-            if (err) {
-              reject(new Error('Unable to select redis db.'));
-            } else {
-              this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
-              this.serviceName = config.serviceName;
-              if (this.serviceName && this.serviceName.length > 0) {
-                this.serviceName = this.serviceName.toLowerCase();
-              }
-              this.serviceDescription = this.config.serviceDescription || 'not specified';
-              this.serviceVersion = this.config.serviceVersion || 'not specified';
+          this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
+          this.serviceName = config.serviceName;
+          if (this.serviceName && this.serviceName.length > 0) {
+            this.serviceName = this.serviceName.toLowerCase();
+          }
+          this.serviceDescription = this.config.serviceDescription || 'not specified';
+          this.serviceVersion = this.config.serviceVersion || 'not specified';
 
-              // if serviceIP field contains a name rather than a dotted IP address
-              // then use DNS to resolve the name to an IP address.
-              if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-                dns.lookup(this.config.serviceIP, (err, result) => {
-                  this.config.serviceIP = result;
-                  this._updateInstanceData();
-                  ready();
-                });
-              } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-                dns.lookup(require('os').hostname(), (err, address, fam) => {
-                  this.config.serviceIP = address;
-                  this._updateInstanceData();
-                  ready();
-                });
-              } else {
-                this._updateInstanceData();
-                ready();
-              }
-            }
-          });
+          // if serviceIP field contains a name rather than a dotted IP address
+          // then use DNS to resolve the name to an IP address.
+          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+            dns.lookup(this.config.serviceIP, (err, result) => {
+              this.config.serviceIP = result;
+              this._updateInstanceData();
+              ready();
+            });
+          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+            dns.lookup(require('os').hostname(), (err, address, fam) => {
+              this.config.serviceIP = address;
+              this._updateInstanceData();
+              ready();
+            });
+          } else {
+            this._updateInstanceData();
+            ready();
+          }
         })
         .catch(err => reject(err));
     });
@@ -207,6 +201,7 @@ class Hydra extends EventEmitter {
     let retryStrategy = config.redis.retry_strategy;
     delete config.redis.retry_strategy;
     let redisConnection = new RedisConnection(Object.assign({ db: HYDRA_REDIS_DB }, config.redis));
+    HYDRA_REDIS_DB = redisConnection.redisConfig.db;
     return redisConnection.connect(retryStrategy)
       .then(client => {
         this.redisdb = client;
@@ -305,7 +300,7 @@ class Hydra extends EventEmitter {
           reject(new Error('Unable to set :service key in redis db.'));
         } else {
           // Setup service message courier channels
-          this.mcMessageChannelClient = redis.createClient(this.redisConfig);
+          this.mcMessageChannelClient = this.redisdb.duplicate();
           this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
           this.mcMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -315,7 +310,7 @@ class Hydra extends EventEmitter {
             }
           });
 
-          this.mcDirectMessageChannelClient = redis.createClient(this.redisConfig);
+          this.mcDirectMessageChannelClient = this.redisdb.duplicate();
           this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
           this.mcDirectMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -1142,7 +1137,7 @@ class Hydra extends EventEmitter {
     if (this.messageChannelPool[chash]) {
       messageChannel = this.messageChannelPool[chash];
     } else {
-      messageChannel = redis.createClient(this.redisConfig);
+      messageChannel = this.redisdb.duplicate();
       this.messageChannelPool[chash] = messageChannel;
     }
     if (messageChannel) {
