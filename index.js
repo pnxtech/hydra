@@ -92,15 +92,48 @@ class Hydra extends EventEmitter {
    */
   init(config) {
     return new Promise((resolve, reject) => {
-      Promise.series(this.registeredPlugins, plugin => plugin.setConfig(config))
-        .then((...results) => {
-          return this._init(config);
-        })
-        .then(() => resolve())
-        .catch((err) => {
-          this._logMessage('error', err.toString());
-          reject(err);
-        });
+      let loader = (newConfig) => {
+        return Promise.series(this.registeredPlugins, plugin => plugin.setConfig(newConfig))
+          .then((...results) => {
+            return this._init(newConfig);
+          })
+          .then(() => {
+            resolve();
+            return 0;
+          })
+          .catch((err) => {
+            this._logMessage('error', err.toString());
+            reject(err);
+          });
+      };
+
+      if (process.env.HYDRA_REDIS_URL && process.env.HYDRA_SERVICE) {
+        this._connectToRedis({ redis: { url: process.env.HYDRA_REDIS_URL }})
+          .then(() => {
+            if (!this.redisdb) {
+              reject(new Error('No Redis connection'));
+              return;
+            }
+            this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
+              if (!err) {
+                this._getConfig(process.env.HYDRA_SERVICE)
+                  .then((storedConfig) => {
+                    this.redisdb.quit();
+                    if (!storedConfig) {
+                      reject(new Error('Invalid service stored config'));
+                    } else {
+                      return loader(storedConfig.hydra);
+                    }
+                  })
+                  .catch(err => reject(err));
+              } else {
+                reject(new Error('Invalid service stored config'));
+              }
+            });
+          });
+      } else {
+        return loader(config);
+      }
     });
   }
 
