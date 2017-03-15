@@ -233,7 +233,7 @@ class Hydra extends EventEmitter {
   _connectToRedis(config) {
     let retryStrategy = config.redis.retry_strategy;
     delete config.redis.retry_strategy;
-    let redisConnection = new RedisConnection(Object.assign({ db: HYDRA_REDIS_DB }, config.redis));
+    let redisConnection = new RedisConnection(config.redis);
     HYDRA_REDIS_DB = redisConnection.redisConfig.db;
     return redisConnection.connect(retryStrategy)
       .then(client => {
