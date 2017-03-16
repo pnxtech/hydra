@@ -92,12 +92,12 @@ class Hydra extends EventEmitter {
   init(config) {
     return new Promise((resolve, reject) => {
       let loader = (newConfig) => {
-        return Promise.series(this.registeredPlugins, plugin => plugin.setConfig(newConfig))
+        return Promise.series(this.registeredPlugins, plugin => plugin.setConfig(newConfig.hydra))
           .then((...results) => {
-            return this._init(newConfig);
+            return this._init(newConfig.hydra);
           })
           .then(() => {
-            resolve();
+            resolve(newConfig);
             return 0;
           })
           .catch((err) => {
@@ -121,7 +121,7 @@ class Hydra extends EventEmitter {
                     if (!storedConfig) {
                       reject(new Error('Invalid service stored config'));
                     } else {
-                      return loader(storedConfig.hydra);
+                      return loader(storedConfig);
                     }
                   })
                   .catch(err => reject(err));
