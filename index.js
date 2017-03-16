@@ -20,7 +20,6 @@ const spawn = require('child_process').spawn;
 const Route = require('route-parser');
 
 const request = require('request');
-const pRequest = require('fwsp-prequest');
 const Utils = require('fwsp-jsutils');
 const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
@@ -1063,16 +1062,32 @@ class Hydra extends EventEmitter {
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
-            pRequest(options, umfmsg.body)
-              .then(response => resolve(response))
-              .catch((err) => {
+            if (umfmsg.body) {
+              options.body = Utils.safeJSONStringify(umfmsg.body);
+            }
+            request(options, (error, response, body) => {
+              if (!error) {
+                if (response.headers['content-type'] && response.headers['content-type'].indexOf('json') > -1) {
+                  let resObject = serverResponse.createResponseObject(response.statusCode, {
+                    result: Utils.safeJSONParse(body)
+                  });
+                  resolve(resObject);
+                } else {
+                  resolve({
+                    headers: response.headers,
+                    body,
+                    statusCode: response.statusCode
+                  });
+                }
+              } else {
                 instanceList.shift();
                 if (instanceList.length === 0) {
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
                 } else {
                   this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject);
                 }
-              });
+              }
+            });
           }
         });
       }
