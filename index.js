@@ -1068,10 +1068,15 @@ class Hydra extends EventEmitter {
             request(options, (error, response, body) => {
               if (!error) {
                 if (response.headers['content-type'] && response.headers['content-type'].indexOf('json') > -1) {
-                  let resObject = serverResponse.createResponseObject(response.statusCode, {
-                    result: Utils.safeJSONParse(body)
-                  });
-                  resolve(resObject);
+                  let bdy = Utils.safeJSONParse(body);
+                  if (bdy.statusCode) {
+                    resolve(bdy);
+                  } else {
+                    let resObject = serverResponse.createResponseObject(response.statusCode, {
+                      result: bdy
+                    });
+                    resolve(resObject);
+                  }
                 } else {
                   resolve({
                     headers: response.headers,
