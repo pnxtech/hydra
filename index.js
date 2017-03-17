@@ -175,11 +175,10 @@ class Hydra extends EventEmitter {
               ready();
             });
           } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-            dns.lookup(require('os').hostname(), (err, address, fam) => {
-              this.config.serviceIP = address;
-              this._updateInstanceData();
-              ready();
-            });
+            let ip = require('ip');
+            this.config.serviceIP = ip.address();
+            this._updateInstanceData();
+            ready();
           } else {
             this._updateInstanceData();
             ready();
