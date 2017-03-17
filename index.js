@@ -183,6 +183,7 @@ class Hydra extends EventEmitter {
             this._updateInstanceData();
             ready();
           }
+          return 0;
         })
         .catch(err => reject(err));
     });
