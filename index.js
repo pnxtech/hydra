@@ -1,18 +1,16 @@
-/*eslint-disable no-unused-vars */
 'use strict';
 
 const Promise = require('bluebird');
 Promise.series = (iterable, action) => {
   return Promise.mapSeries(
     iterable.map(action),
-    (value, index, length) => value || iterable[index].name || null
+    (value, index, _length) => value || iterable[index].name || null
   );
 };
 
 const dns = require('dns');
 const net = require('net');
 const EventEmitter = require('events');
-const redis = require('redis');
 const util = require('util');
 const humanize = require('humanize-duration');
 const spawn = require('child_process').spawn;
@@ -42,6 +40,10 @@ const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields
  * @fires Hydra#message
  */
 class Hydra extends EventEmitter {
+  /**
+  * @name constructor
+  * @return {undefined}
+  */
   constructor() {
     super();
 
@@ -68,7 +70,7 @@ class Hydra extends EventEmitter {
    * @return {object} - Promise which will resolve when all plugins are registered
    */
   use(...plugins) {
-    return Promise.series(plugins, plugin => this._registerPlugin(plugin));
+    return Promise.series(plugins, (plugin) => this._registerPlugin(plugin));
   }
 
   /**
@@ -91,8 +93,8 @@ class Hydra extends EventEmitter {
   init(config) {
     return new Promise((resolve, reject) => {
       let loader = (newConfig) => {
-        return Promise.series(this.registeredPlugins, plugin => plugin.setConfig(newConfig.hydra))
-          .then((...results) => {
+        return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
+          .then((..._results) => {
             return this._init(newConfig.hydra);
           })
           .then(() => {
@@ -106,13 +108,13 @@ class Hydra extends EventEmitter {
       };
 
       if (process.env.HYDRA_REDIS_URL && process.env.HYDRA_SERVICE) {
-        this._connectToRedis({ redis: { url: process.env.HYDRA_REDIS_URL }})
+        this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
               reject(new Error('No Redis connection'));
               return;
             }
-            this.redisdb.select(HYDRA_REDIS_DB, (err, result) => {
+            this.redisdb.select(HYDRA_REDIS_DB, (err, _result) => {
               if (!err) {
                 this._getConfig(process.env.HYDRA_SERVICE)
                   .then((storedConfig) => {
@@ -123,7 +125,7 @@ class Hydra extends EventEmitter {
                       return loader(storedConfig);
                     }
                   })
-                  .catch(err => reject(err));
+                  .catch((err) => reject(err));
               } else {
                 reject(new Error('Invalid service stored config'));
               }
@@ -144,11 +146,11 @@ class Hydra extends EventEmitter {
   _init(config) {
     return new Promise((resolve, reject) => {
       let ready = () => {
-        Promise.series(this.registeredPlugins, plugin => plugin.onServiceReady())
-          .then((...results) => {
+        Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady())
+          .then((..._results) => {
             resolve();
           })
-          .catch(err => this._logMessage('error', err.toString()));
+          .catch((err) => this._logMessage('error', err.toString()));
       };
       this.config = config;
       this._connectToRedis(this.config)
@@ -184,13 +186,14 @@ class Hydra extends EventEmitter {
           }
           return 0;
         })
-        .catch(err => reject(err));
+        .catch((err) => reject(err));
     });
   }
 
   /**
    * @name _updateInstanceData
    * @summary Update instance id and direct message key
+   * @return {undefined}
    */
   _updateInstanceData() {
     this.instanceID = this._serverInstanceID();
@@ -200,6 +203,7 @@ class Hydra extends EventEmitter {
   /**
    * @name _shutdown
    * @summary Shutdown hydra safely.
+   * @return {undefined}
    */
   _shutdown() {
     this._logMessage('error', 'Service is shutting down.');
@@ -234,7 +238,7 @@ class Hydra extends EventEmitter {
     let redisConnection = new RedisConnection(config.redis);
     HYDRA_REDIS_DB = redisConnection.redisConfig.db;
     return redisConnection.connect(retryStrategy)
-      .then(client => {
+      .then((client) => {
         this.redisdb = client;
         client
           .on('reconnecting', () => {
@@ -251,7 +255,7 @@ class Hydra extends EventEmitter {
           });
         return client;
       })
-      .catch(err => {
+      .catch((err) => {
         let message = `Redis error: ${err.message}`;
         this._logMessage('error', message);
         throw err;
@@ -265,7 +269,7 @@ class Hydra extends EventEmitter {
    * @return {object} promise - promise resolving to array of keys or or empty array
    */
   _getKeys(pattern) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       this.redisdb.keys(pattern, (err, result) => {
         if (err) {
           resolve([]);
@@ -326,7 +330,7 @@ class Hydra extends EventEmitter {
         type: this.config.serviceType,
         registeredOn: this._getTimeStamp()
       });
-      this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, result) => {
+      this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, _result) => {
         if (err) {
           reject(new Error('Unable to set :service key in redis db.'));
         } else {
@@ -388,7 +392,7 @@ class Hydra extends EventEmitter {
         routes.forEach((route) => {
           trans.sadd(routesKey, route);
         });
-        trans.exec((err, result) => {
+        trans.exec((err, _result) => {
           if (err) {
             reject(err);
           } else {
@@ -525,6 +529,7 @@ class Hydra extends EventEmitter {
    * @name _updatePresence
    * @summary Update service presence.
    * @private
+   * @return {undefined}
    */
   _updatePresence() {
     let entry = Utils.safeJSONStringify({
@@ -552,6 +557,7 @@ class Hydra extends EventEmitter {
    * @name _updateHealthCheck
    * @summary Update service helath.
    * @private
+   * @return {undefined}
    */
   _updateHealthCheck() {
     let entry = Object.assign({
@@ -596,7 +602,7 @@ class Hydra extends EventEmitter {
         let lines = data.toString().split('\n');
         let results = lines[SECOND_LINE]
           .split(' ')
-          .filter(element => element !== '');
+          .filter((element) => element !== '');
         resolve(results[USED_DISKSPACE_FIELD]);
       });
       df.stderr.on('data', (data) => {
@@ -648,6 +654,7 @@ class Hydra extends EventEmitter {
    * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
    * @param {string} message - message to log
    * @param {boolean} suppressEmit - false by default. If true then suppress log emit
+   * @return {undefined}
    */
   _logMessage(type, message, suppressEmit) {
     let errMessage = {
@@ -832,12 +839,14 @@ class Hydra extends EventEmitter {
             reject(new Error(`Service instance for ${name} is unavailable`));
           } else {
             if (result.length > 1) {
-              result.sort((a, b) => { return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0); });
+              result.sort((a, b) => {
+                return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0);
+              });
             }
             resolve(result);
           }
         })
-        .catch((err) => {
+        .catch((_err) => {
           reject(new Error(`Service instance for ${name} is unavailable`));
         });
     });
@@ -1000,7 +1009,7 @@ class Hydra extends EventEmitter {
       }
 
       instance = instance || instanceList[0];
-      this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, result) => {
+      this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, _result) => {
         if (err) {
           reject(err);
         } else {
@@ -1025,6 +1034,7 @@ class Hydra extends EventEmitter {
    * @param {object} umfmsg - UMF message
    * @param {function} resolve - promise resolve function
    * @param {function} reject - promise reject function
+   * @return {undefined}
    */
   _tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject) {
     let instance;
@@ -1040,7 +1050,7 @@ class Hydra extends EventEmitter {
 
     instance = instance || instanceList[0];
 
-    this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, result) => {
+    this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, _result) => {
       if (err) {
         reject(err);
       } else {
@@ -1182,6 +1192,7 @@ class Hydra extends EventEmitter {
    * @summary Sends a message to a redis pubsub channel
    * @param {string} channel - channel name
    * @param {object} message - UMF formatted message object
+   * @return {undefined}
    */
   _sendMessageThroughChannel(channel, message) {
     let messageChannel;
@@ -1207,7 +1218,7 @@ class Hydra extends EventEmitter {
    *                   error in rejected promise.
    */
   _sendMessage(message) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       let {
         serviceName,
         instance
@@ -1269,7 +1280,7 @@ class Hydra extends EventEmitter {
    *                   error in rejected promise.
    */
   _sendBroadcastMessage(message) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       let {
         serviceName
       } = UMFMessage.parseRoute(message.to);
@@ -1309,7 +1320,7 @@ class Hydra extends EventEmitter {
       }
 
       let serviceName = parsedRoute.serviceName;
-      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(umfmsg.toShort()), (err, data) => {
+      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(umfmsg.toShort()), (err, _data) => {
         if (err) {
           reject(err);
         } else {
@@ -1353,7 +1364,7 @@ class Hydra extends EventEmitter {
         message.body.reason = reason || 'reason not provided';
       }
       let strMessage = Utils.safeJSONStringify(message);
-      this.redisdb.lrem(`${redisPreKey}:${serviceName}:mqinprogress`, -1, strMessage, (err, data) => {
+      this.redisdb.lrem(`${redisPreKey}:${serviceName}:mqinprogress`, -1, strMessage, (err, _data) => {
         if (err) {
           reject(err);
         } else {
@@ -1408,7 +1419,7 @@ class Hydra extends EventEmitter {
       if (parts.length !== 2) {
         reject(new Error('label not in this form: myservice:0.1.1.'));
       }
-      this.redisdb.hset(`${redisPreKey}:${parts[0]}:configs`, `${parts[1]}`, Utils.safeJSONStringify(config), (err, result) => {
+      this.redisdb.hset(`${redisPreKey}:${parts[0]}:configs`, `${parts[1]}`, Utils.safeJSONStringify(config), (err, _result) => {
         if (err) {
           reject(new Error('Unable to set :configs key in redis db.'));
         } else {
@@ -1428,8 +1439,8 @@ class Hydra extends EventEmitter {
   }
 
   /** **************************************************************
-   * Hydra private utility functions.
-   * ****************************************************************/
+   *  Hydra private utility functions.
+   * ***************************************************************/
 
   /**
    * @name _createServerResponseWithReason
@@ -1481,15 +1492,9 @@ class Hydra extends EventEmitter {
   }
 }
 
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
-/*=========================================================================================================*/
+/** **************************************************************
+ *  Hydra interface class
+ * ***************************************************************/
 
 /**
  * @name IHydra
@@ -1515,6 +1520,12 @@ class IHydra extends Hydra {
     return super.init(config);
   }
 
+  /**
+  * @name use
+  * @summary Use plugins
+  * @param {array} plugins - plugins to process
+  * @return {undefined}
+  */
   use(...plugins) {
     return super.use(...plugins);
   }
@@ -1522,6 +1533,7 @@ class IHydra extends Hydra {
   /**
    * @name _shutdown
    * @summary Shutdown hydra safely.
+   * @return {undefined}
    */
   shutdown() {
     super._shutdown();
@@ -1602,6 +1614,7 @@ class IHydra extends Hydra {
    * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
    * @param {string} message - message to log
    * @param {boolean} suppressEmit - false by default. If true then suppress log emit
+   * @return {undefined}
    */
   sendToHealthLog(type, message, suppressEmit) {
     this._logMessage(type, message, suppressEmit);
