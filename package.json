@@ -1,6 +1,6 @@
 {
   "name": "fwsp-hydra",
-  "version": "0.15.10",
+  "version": "0.15.11",
   "author": "Carlos Justiniano",
   "contributors": [
     {
@@ -55,8 +55,6 @@
   "devDependencies": {
     "chai": "3.5.0",
     "eslint": "3.17.1",
-    "jscs": "3.0.7",
-    "jscs-jsdoc": "2.0.0",
     "mocha": "3.2.0",
     "sinon": "1.17.7"
   },
