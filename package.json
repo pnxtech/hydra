@@ -1,6 +1,6 @@
 {
   "name": "fwsp-hydra",
-  "version": "0.15.11",
+  "version": "0.15.12",
   "author": "Carlos Justiniano",
   "contributors": [
     {
@@ -46,7 +46,6 @@
     "humanize-duration": "3.10.0",
     "ip": "1.1.5",
     "lodash": "4.17.4",
-    "moment": "2.18.0",
     "redis": "2.7.1",
     "redis-url": "1.2.1",
     "request": "2.81.0",
