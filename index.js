@@ -1419,6 +1419,15 @@ class Hydra extends EventEmitter {
     });
   }
 
+  /**
+  * @name _getClonedRedisClient
+  * @summary get a redis client connection which points to the same Redis server that hydra is using
+  * @return {object} - Redis Client
+  */
+  _getClonedRedisClient() {
+    return this.redisdb.duplicate();
+  }
+
   /** **************************************************************
    * Hydra private utility functions.
    * ****************************************************************/
@@ -1764,6 +1773,15 @@ class IHydra extends Hydra {
    */
   putConfig(label, config) {
     return super._putConfig(label, config);
+  }
+
+  /**
+  * @name getClonedRedisClient
+  * @summary get a redis client connection which points to the same Redis server that hydra is using
+  * @return {object} - Redis Client
+  */
+  getClonedRedisClient() {
+    return super._getClonedRedisClient();
   }
 }
 
