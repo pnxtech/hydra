@@ -13,7 +13,6 @@ const dns = require('dns');
 const net = require('net');
 const EventEmitter = require('events');
 const redis = require('redis');
-const moment = require('moment');
 const util = require('util');
 const humanize = require('humanize-duration');
 const spawn = require('child_process').spawn;
@@ -726,7 +725,7 @@ class Hydra extends EventEmitter {
         reject(new Error('No Redis connection'));
         return;
       }
-      let now = moment.now();
+      let now = (new Date()).getTime();
       this.redisdb.hgetall(`${redisPreKey}:nodes`, (err, data) => {
         if (err) {
           reject(err);
@@ -735,7 +734,7 @@ class Hydra extends EventEmitter {
           if (data) {
             Object.keys(data).forEach((entry) => {
               let item = Utils.safeJSONParse(data[entry]);
-              item.elapsed = parseInt(moment.duration(now - moment(item.updatedOn)) / 1000);
+              item.elapsed = parseInt((now - (new Date(item.updatedOn)).getTime()) / 1000);
               nodes.push(item);
             });
           }
@@ -804,7 +803,7 @@ class Hydra extends EventEmitter {
               let instanceList = result.map((instance) => {
                 let instanceObj = Utils.safeJSONParse(instance);
                 if (instanceObj) {
-                  instanceObj.updatedOnTS = moment(instanceObj.updatedOn).unix();
+                  instanceObj.updatedOnTS = (new Date(instanceObj.updatedOn).getTime());
                 }
                 return instanceObj;
               });
