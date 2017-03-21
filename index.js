@@ -1430,6 +1430,29 @@ class Hydra extends EventEmitter {
   }
 
   /**
+  * @name _listConfig
+  * @summary Return a list of config keys
+  * @param {string} serviceName - name of service
+  * @return {promise} promise - resolving or rejecting.
+  */
+  _listConfig(serviceName) {
+    return new Promise((resolve, reject) => {
+      this.redisdb.hkeys(`${redisPreKey}:${serviceName}:configs`, (err, result) => {
+        if (err) {
+          reject(new Error('Unable to retrieve :config keys from redis db.'));
+        } else {
+          if (result) {
+            result.sort();
+            resolve(result.map((item) => `${serviceName}:${item}`));
+          } else {
+            resolve([]);
+          }
+        }
+      });
+    });
+  }
+
+  /**
   * @name _getClonedRedisClient
   * @summary get a redis client connection which points to the same Redis server that hydra is using
   * @return {object} - Redis Client
@@ -1785,6 +1808,16 @@ class IHydra extends Hydra {
    */
   putConfig(label, config) {
     return super._putConfig(label, config);
+  }
+
+  /**
+  * @name listConfig
+  * @summary Return a list of config keys
+  * @param {string} serviceName - name of service
+  * @return {promise} promise - resolving or rejecting.
+  */
+  listConfig(serviceName) {
+    return super._listConfig(serviceName);
   }
 
   /**
