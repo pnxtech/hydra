@@ -17,7 +17,7 @@ As a Node module, Hydra provides drop-in functionality which is designed to addr
 * **Health Reporting**: Automatic health check reporting, to answer questions such as: Is the application healthy? Is it functioning properly?
 * **Presence Reporting**: Is an instance of service actually available?
 
-> ☕ If you're using ExpressJS to build your microservice you should consider using the [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express) module which provides ExpressJS bindings and a higher level of abstraction.
+> ☕ If you're using ExpressJS to build your microservice you should consider using the [Hydra-Express](https://github.com/flywheelsports/hydra-express) module which provides ExpressJS bindings and a higher level of abstraction.
 
 In this document we'll refer to `services` and `service instances`. A Service Instance and Service Node refers to the same thing. A service is simply the name given to one or more service instances, consider it a class of service. For example, we might have a service to handle image resizing, and we might simply call that service `image-resizer`. In our cloud infrastructure we might have three instances of the image-resizer service running in response to high demand.  Each instance is a service instance or node.
 
@@ -50,7 +50,7 @@ In Hydra, a service instance is simply a process which uses Hydra to handle micr
 To use Hydra from another project:
 
 ```
-$ npm install fwsp-hydra
+$ npm install hydra
 ```
 
 # Using Hydra
@@ -60,7 +60,7 @@ $ npm install fwsp-hydra
 To load Hydra simply import it:
 
 ```javascript
-const hydra = require('fwsp-hydra');
+const hydra = require('hydra');
 ```
 
 ## Initialization
@@ -331,7 +331,7 @@ hydra.makeAPIRequest(message)
 
 ### Inter-service messaging
 
-Using Hydra you can send messages between services and even route messages among a series of services. This is one of the features that the [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router) offers.
+Using Hydra you can send messages between services and even route messages among a series of services. This is one of the features that the [Hydra-Router](https://github.com/flywheelsports/hydra-router) offers.
 
 #### Built-in message channels
 
