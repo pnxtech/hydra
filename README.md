@@ -1,8 +1,8 @@
 ![](hydra.png)
 
-[![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/fwsp-hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/fwsp-hydra.svg" alt="NPM downloads" /></a></span> 
+[![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/fwsp-hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/fwsp-hydra.svg" alt="NPM downloads" /></a></span>
 
-Hydra is a light-weight library for building distributed computing applications - such as microservices. 
+Hydra is a light-weight library for building distributed computing applications - such as microservices.
 It was announced at [EmpireNode 2016](http://empirenode.org/).
 
 A key goal in Hydra is to simplify building Node-based distributed applications.
@@ -28,10 +28,14 @@ Are you using or planning on using Hydra on your project? Join us on Slack for m
 
 ### Related projects
 
-* [Hydra-Express](https://github.com/flywheelsports/fwsp-hydra-express): hydra for ExpressJS developers
+* [Hydra-Express](https://github.com/flywheelsports/hydra-express): hydra for ExpressJS developers
 * [Hydra-cli](https://github.com/flywheelsports/hydra-cli): a hydra commandline client for interacting with Hydra-enabled applications
 * [Hydra Generator](https://github.com/flywheelsports/generator-fwsp-hydra): A Yeoman generator for quickly building hydra-based projects
-* [Hydra-Router](https://github.com/flywheelsports/fwsp-hydra-router): A service-aware socket and HTTP API router
+* [Hydra-Router](https://github.com/flywheelsports/hydra-router): A service-aware socket and HTTP API router
 * [UMF](https://github.com/cjus/umf): Universal Message Format, a messaging specification for routable messages
 * [Hydra-Cluster](https://github.com/cjus/hydra-cluster): A compute cluster based on Hydra
 * [Other Flywheel Sports open source projects](https://github.com/flywheelsports)
+
+### Special thanks
+
+A special thanks to Michael Stillwell for generously allowing the Hydra project to use his old repo name on NPM!
