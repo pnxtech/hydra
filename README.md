@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/fwsp-hydra.svg)](https://badge.fury.io/js/fwsp-hydra) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/fwsp-hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/fwsp-hydra.svg" alt="NPM downloads" /></a></span> 
 
-Hydra is a a light-weight library for building distributed computing applications - such as microservices. 
+Hydra is a light-weight library for building distributed computing applications - such as microservices. 
 It was announced at [EmpireNode 2016](http://empirenode.org/).
 
 A key goal in Hydra is to simplify building Node-based distributed applications.
