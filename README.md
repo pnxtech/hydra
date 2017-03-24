@@ -2,8 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/hydra.svg)](https://badge.fury.io/js/hydra) <span class="badge-npmdownloads"><a href="https://npmjs.org/package/hydra" title="View this project on NPM"><img src="https://img.shields.io/npm/dm/hydra.svg" alt="NPM downloads" /></a></span>
 
-Hydra is a light-weight library for building distributed computing applications - such as microservices.
-It was announced at [EmpireNode 2016](http://empirenode.org/).
+Hydra is a NodeJS package which facilitates building distributed applications such as Microservices.
 
 Hydra offers features such as service discovery, distributed messaging, message load balancing, logging, presence, and health monitoring. It was announced at [EmpireNode 2016](http://empirenode.org/).
 
@@ -43,7 +42,6 @@ On RisingStack:
 
 * [Tutorial: Building ExpressJS-based microservices using Hydra](https://community.risingstack.com/tutorial-building-expressjs-based-microservices-using-hydra/)
 * [Building a Microservices Example Game with Distributed Messaging](https://community.risingstack.com/building-a-microservices-example-game-with-distributed-messaging/)
-
 
 ### Special thanks
 
