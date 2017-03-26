@@ -14,11 +14,12 @@ If you're just getting started with Node Microservices and you have ExpressJS ex
 
 ### Documentation
 
-Read the [Full documentation](documentation.md)
+We're building a dedicated documentation site for hydra at: https://www.hydramicroservice.com
+Our older docs are still available at: [Full documentation](documentation.md)
 
 ### Join us on Slack!
 
-Are you using or planning on using Hydra on your project? Join us on Slack for more direct support. https://fwsp-hydra.slack.com
+Are you using or planning on using Hydra on your project? Join us on Slack for more direct support. https://fwsp-hydra.slack.com To join, email cjus34@gmail.com with your desired username and email address (for invite).
 
 ### Related projects
 
