@@ -33,6 +33,11 @@ There are many projects on NPM which contain the name `hydra`. The following are
 * [UMF](https://github.com/cjus/umf): Universal Message Format, a messaging specification for routable messages
 * [Hydra-Cluster](https://github.com/cjus/hydra-cluster): A compute cluster based on Hydra
 
+### Articles
+
+* [Tutorial: Building ExpressJS-based microservices using Hydra](https://community.risingstack.com/tutorial-building-expressjs-based-microservices-using-hydra/)
+* [Building a Microservices Example Game with Distributed Messaging](https://community.risingstack.com/building-a-microservices-example-game-with-distributed-messaging/)
+
 ### Special thanks
 
 A special thanks to Michael Stillwell for generously transfering his `Hydra` project name on NPM!
