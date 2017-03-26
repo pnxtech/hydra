@@ -44,4 +44,4 @@ On RisingStack:
 
 ### Special thanks
 
-A special thanks to Michael Stillwell for generously allowing the Hydra project to use his old repo name on NPM!
+A special thanks to Michael Stillwell for generously transfering his `Hydra` project name on NPM!
