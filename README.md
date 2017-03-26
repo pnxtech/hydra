@@ -15,6 +15,8 @@ If you're just getting started with Node Microservices and you have ExpressJS ex
 We're building a dedicated documentation site for hydra at: https://www.hydramicroservice.com
 Our older docs are still available at: [Full documentation](documentation.md)
 
+Interested in running Hydra on AWS using Docker containers and Swarm mode? See: https://github.com/cjus/hydra-and-aws-in-docker-swarm
+
 ### Join us on Slack!
 
 Are you using or planning on using Hydra on your project? Join us on Slack for more direct support. https://fwsp-hydra.slack.com To join, email cjus34@gmail.com with your desired username and email address (for invite).
@@ -30,17 +32,6 @@ There are many projects on NPM which contain the name `hydra`. The following are
 * [Hydra-Router](https://github.com/flywheelsports/-hydra-router): A service-aware socket and HTTP API router
 * [UMF](https://github.com/cjus/umf): Universal Message Format, a messaging specification for routable messages
 * [Hydra-Cluster](https://github.com/cjus/hydra-cluster): A compute cluster based on Hydra
-
-### Articles
-
-* [What is Hydra?](https://medium.com/@cjus/what-is-hydra-226db88fc075#.c9jm9l3ql)
-* [Using Hydra’s CLI](https://medium.com/@cjus/using-hydras-cli-f66f56fe355d#.57ep34fv2)
-* [Hydra, AWS, and Docker: a microservices deployment story](https://medium.com/@cjus/hydra-aws-and-docker-a-microservices-deployment-story-ce7c3f4abad9#.rqw11heff)
-
-On RisingStack:
-
-* [Tutorial: Building ExpressJS-based microservices using Hydra](https://community.risingstack.com/tutorial-building-expressjs-based-microservices-using-hydra/)
-* [Building a Microservices Example Game with Distributed Messaging](https://community.risingstack.com/building-a-microservices-example-game-with-distributed-messaging/)
 
 ### Special thanks
 
