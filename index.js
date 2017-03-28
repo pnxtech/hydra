@@ -165,7 +165,7 @@ class Hydra extends EventEmitter {
             this.serviceName = this.serviceName.toLowerCase();
           }
           this.serviceDescription = this.config.serviceDescription || 'not specified';
-          this.serviceVersion = this.config.serviceVersion || 'not specified';
+          this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
           // if serviceIP field contains a name rather than a dotted IP address
           // then use DNS to resolve the name to an IP address.
@@ -1512,6 +1512,20 @@ class Hydra extends EventEmitter {
    */
   _getTimeStamp() {
     return new Date().toISOString();
+  }
+
+  /**
+  * @name _getParentPackageJSONVersion
+  * @summary Retreieve the vesion from the host app's package.json file.
+  * @return {string} version - package version
+  */
+  _getParentPackageJSONVersion() {
+    let version = 'not specified';
+    if (process.argv[1]) {
+      const path = require('path');
+      version = require(`${path.dirname(process.argv[1])}/package.json`).version;
+    }
+    return version;
   }
 }
 
