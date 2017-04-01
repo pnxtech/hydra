@@ -1096,7 +1096,7 @@ class Hydra extends EventEmitter {
               } else {
                 instanceList.shift();
                 if (instanceList.length === 0) {
-                  resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+                  resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
                   this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject);
                 }
