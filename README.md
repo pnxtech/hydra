@@ -40,4 +40,4 @@ There are many projects on NPM which contain the name `hydra`. The following are
 
 ### Special thanks
 
-A special thanks to Michael Stillwell for generously transfering his `Hydra` project name on NPM!
+A special thanks to Michael Stillwell for generously transferring his `Hydra` project name on NPM!
