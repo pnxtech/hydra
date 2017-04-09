@@ -1520,10 +1520,14 @@ class Hydra extends EventEmitter {
   * @return {string} version - package version
   */
   _getParentPackageJSONVersion() {
-    let version = 'not specified';
-    if (process.argv[1]) {
+    let version;
+    try {
       const path = require('path');
-      version = require(`${path.dirname(process.argv[1])}/package.json`).version;
+      const fs = require('fs');
+      let fpath = `${path.dirname(fs.realpathSync(__filename))}/package.json`;
+      version = require(fpath).version;
+    } catch (e) {
+      version = 'unspecified';
     }
     return version;
   }
