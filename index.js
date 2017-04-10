@@ -28,8 +28,8 @@ let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
-const PRESENCE_UPDATE_INTERVAL = 5000; // unit = milli-seconds, so every 5 seconds
-const HEALTH_UPDATE_INTERVAL = 5000;
+const PRESENCE_UPDATE_INTERVAL = 500; // unit = milli-seconds, so every half second
+const HEALTH_UPDATE_INTERVAL = 500;
 const KEY_EXPIRATION_TTL = parseInt((PRESENCE_UPDATE_INTERVAL / 1000) * 2);
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 
