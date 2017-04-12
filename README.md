@@ -29,7 +29,7 @@ There are many projects on NPM which contain the name `hydra`. The following are
 * [Hydra-Express](https://github.com/flywheelsports/hydra-express): hydra for ExpressJS developers
 * [Hydra-cli](https://github.com/flywheelsports/hydra-cli): a hydra commandline client for interacting with Hydra-enabled applications
 * [Hydra Generator](https://github.com/flywheelsports/generator-fwsp-hydra): A Yeoman generator for quickly building hydra-based projects
-* [Hydra-Router](https://github.com/flywheelsports/-hydra-router): A service-aware socket and HTTP API router
+* [Hydra-Router](https://github.com/flywheelsports/hydra-router): A service-aware socket and HTTP API router
 * [UMF](https://github.com/cjus/umf): Universal Message Format, a messaging specification for routable messages
 * [Hydra-Cluster](https://github.com/cjus/hydra-cluster): A compute cluster based on Hydra
 
