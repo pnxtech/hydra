@@ -17,7 +17,7 @@ If you're just getting started with Node Microservices and you have ExpressJS ex
 We're building a dedicated documentation site for hydra at: https://www.hydramicroservice.com
 Our older docs are still available at: [Full documentation](documentation.md)
 
-Interested in running Hydra on AWS using Docker containers and Swarm mode? See: https://github.com/cjus/hydra-and-aws-in-docker-swarm
+Hydra works great on AWS using Docker containers and Swarm mode, see: https://www.hydramicroservice.com/docs/docker/docker.html
 
 ### Join us on Slack!
 
