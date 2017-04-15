@@ -1064,7 +1064,8 @@ class Hydra extends EventEmitter {
               url,
               headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json; charset=UTF-8'
+                'Accept': 'application/json',
+                'Accept-Charset': 'utf-8'
               },
               method: parsedRoute.httpMethod
             };
@@ -1148,7 +1149,8 @@ class Hydra extends EventEmitter {
           url: `${parsedRoute.serviceName}${parsedRoute.apiRoute}`,
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json; charset=UTF-8'
+            'Accept': 'application/json',
+            'Accept-Charset': 'utf-8'
           },
           method: parsedRoute.httpMethod
         };
