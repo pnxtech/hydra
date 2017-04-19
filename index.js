@@ -16,7 +16,7 @@ const humanize = require('humanize-duration');
 const spawn = require('child_process').spawn;
 const Route = require('route-parser');
 
-const request = require('request');
+const popsicle = require('popsicle');
 const Utils = require('fwsp-jsutils');
 const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
@@ -32,6 +32,12 @@ const PRESENCE_UPDATE_INTERVAL = 500; // unit = milli-seconds, so every half sec
 const HEALTH_UPDATE_INTERVAL = 500;
 const KEY_EXPIRATION_TTL = parseInt((PRESENCE_UPDATE_INTERVAL / 1000) * 2);
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
+
+const request = (options, cb) => {
+  popsicle.request(options)
+    .then((res) => cb(null, res, res.body))
+    .catch((err) => cb(err, {statusCode: 500}));
+};
 
 /**
  * @name Hydra
