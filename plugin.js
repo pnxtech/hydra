@@ -31,7 +31,7 @@ class HydraPlugin {
   */
   setConfig(hydraConfig) {
     this.hydraConfig = hydraConfig;
-    this.opts = hydraConfig.plugins[this.name];
+    this.opts = (hydraConfig.plugins && hydraConfig.plugins[this.name]) || {};
   }
 
   /**
@@ -43,7 +43,7 @@ class HydraPlugin {
   updateConfig(serviceConfig) {
     this.serviceConfig = serviceConfig;
     this.hydraConfig = serviceConfig.hydra;
-    let opts = this.hydraConfig.plugins[this.name];
+    let opts = (this.hydraConfig.plugins && this.hydraConfig.plugins[this.name]) || {};
     let isEqual = (JSON.stringify(this.opts) == JSON.stringify(opts));
     if (!isEqual) {
       this.configChanged(opts);
