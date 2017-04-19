@@ -51,6 +51,7 @@ class Hydra extends EventEmitter {
     this.serviceVersion = '';
     this.isService = false;
     this.initialized = false;
+    this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
     this.redisdb = null;
     this._updatePresence = this._updatePresence.bind(this);
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
@@ -90,7 +91,7 @@ class Hydra extends EventEmitter {
    */
   init(config, testMode) {
     this.testMode = testMode;
-    return new Promise((resolve, reject) => {
+    const initPromise = new Promise((resolve, reject) => {
       if (!config || !config.hydra) {
         reject(new Error('Config missing hydra branch'));
         return;
@@ -103,7 +104,6 @@ class Hydra extends EventEmitter {
         reject(new Error('Config missing serviceName or servicePort'));
         return;
       }
-
       let loader = (newConfig) => {
         return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
           .then((..._results) => {
@@ -147,6 +147,8 @@ class Hydra extends EventEmitter {
         return loader(config);
       }
     });
+    this.ready = () => initPromise;
+    return initPromise;
   }
 
   /**
