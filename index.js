@@ -143,52 +143,58 @@ class Hydra extends EventEmitter {
    * @param {object} config - configuration object containing hydra specific keys/values
    * @return {object} promise - resolving if init success or rejecting otherwise
    */
-  _init(config) {
-    return new Promise((resolve, reject) => {
-      let ready = () => {
-        Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady())
-          .then((..._results) => {
-            resolve();
-          })
-          .catch((err) => this._logMessage('error', err.toString()));
-      };
-      this.config = config;
-      this._connectToRedis(this.config)
-        .then(() => {
-          if (!this.redisdb) {
-            reject(new Error('No Redis connection'));
-            return;
-          }
-          this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
-          this.serviceName = config.serviceName;
-          if (this.serviceName && this.serviceName.length > 0) {
-            this.serviceName = this.serviceName.toLowerCase();
-          }
-          this.serviceDescription = this.config.serviceDescription || 'not specified';
-          this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
+   _init(config) {
+     return new Promise((resolve, reject) => {
+       let ready = () => {
+         Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady())
+             .then((..._results) => {
+               resolve();
+             })
+             .catch((err) => this._logMessage('error', err.toString()));
+       };
+       this.config = config;
+       this._connectToRedis(this.config)
+           .then(() => {
+             if (!this.redisdb) {
+               reject(new Error('No Redis connection'));
+               return;
+             }
+             this._parseServicePortConfig(this.config.servicePort)
+                 .then((port) => {
+                   this.config.servicePort = port;
+                   this.serviceName = config.serviceName;
+                   if (this.serviceName && this.serviceName.length > 0) {
+                     this.serviceName = this.serviceName.toLowerCase();
+                   }
+                   this.serviceDescription = this.config.serviceDescription || 'not specified';
+                   this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
-          // if serviceIP field contains a name rather than a dotted IP address
-          // then use DNS to resolve the name to an IP address.
-          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-            dns.lookup(this.config.serviceIP, (err, result) => {
-              this.config.serviceIP = result;
-              this._updateInstanceData();
-              ready();
-            });
-          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-            let ip = require('ip');
-            this.config.serviceIP = ip.address();
-            this._updateInstanceData();
-            ready();
-          } else {
-            this._updateInstanceData();
-            ready();
-          }
-          return 0;
-        })
-        .catch((err) => reject(err));
-    });
-  }
+                   // if serviceIP field contains a name rather than a dotted IP address
+                   // then use DNS to resolve the name to an IP address.
+                   if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+                     dns.lookup(this.config.serviceIP, (err, result) => {
+                       this.config.serviceIP = result;
+                       this._updateInstanceData();
+                       ready();
+                     });
+                   } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+                     let ip = require('ip');
+                     this.config.serviceIP = ip.address();
+                     this._updateInstanceData();
+                     ready();
+                   } else {
+                     this._updateInstanceData();
+                     ready();
+                   }
+                   return 0;
+                 })
+                 .catch((err) => {
+                   reject(err);
+                 });
+           })
+           .catch((err) => reject(err));
+     });
+   }
 
   /**
    * @name _updateInstanceData
@@ -1483,14 +1489,63 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getRandomServicePort
-   * @summary Retrieves a random TCP/IP port.
-   * @return {number} port - new random socket port
+   * @name _parseServicePortConfig
+   * @summary Parse and process given port data in config
+   * @param {mixed} port - configured port
+   * @return {promise} promise - resolving with unassigned port
    */
-  _getRandomServicePort() {
-    const maxSocketPort = 65535;
-    const nonPriviliagePortBountry = 1024;
-    return parseInt(nonPriviliagePortBountry + (new Date().getTime() % (Math.random() * (maxSocketPort - nonPriviliagePortBountry))));
+  _parseServicePortConfig(port) {
+    //No port given, get unassigned port from standard ranges
+    if (typeof port === 'undefined' || !port) {
+      return new Promise((resolve) => {
+        this._getUnassignedRandomServicePort(1024, 65535, (port) => {
+          resolve(port);
+        });
+      });
+    } else {
+      //Port range given, get unassigned port within given range
+      const ipRe = '(102[4-9]|10[3-9]\\d|1[1-9]\\d{2}|[2-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])';
+      const matches = port.toString().match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
+      if (matches !== null) {
+        let foundRanges = matches[0].split('-');
+        return new Promise((resolve) => {
+          this._getUnassignedRandomServicePort(parseInt(foundRanges[0]), parseInt(foundRanges[1]), (port) => {
+            resolve(port);
+          });
+        });
+      } else {
+        //Fixed port given, check if unassigned
+        return new Promise((resolve) => {
+          this._getUnassignedRandomServicePort(parseInt(port), parseInt(port), (port) => {
+            resolve(port);
+          });
+        });
+      }
+    }
+  }
+
+  /**
+   * @name _getUnassignedRandomServicePort
+   * @summary retrieve a free service port in given range
+   * @param {number} min - Minimum port number
+   * @param {number} max - Maximum port number
+   * @param {function} callback - Callback function when done
+   * @return {undefined}
+   **/
+  _getUnassignedRandomServicePort(min, max, callback) {
+    const instance = this;
+    const host = this.config.serviceIP;
+    const port = Math.floor(Math.random() * (max - min + 1)) + min;
+    const server = require('net').createServer();
+    server.listen({port, host}, () => {
+      server.once('close', () => {
+        callback(port);
+      })
+      server.close();
+    })
+    server.on('error', () => {
+      instance._getUnassignedRandomServicePort(min, max, callback);
+    });
   }
 
   /**
