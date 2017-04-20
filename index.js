@@ -223,6 +223,7 @@ class Hydra extends EventEmitter {
         this.redisdb.quit();
       });
     }
+    this.initialized = false;
   }
 
   /**
