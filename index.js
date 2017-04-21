@@ -1492,48 +1492,60 @@ class Hydra extends EventEmitter {
    * @name _parseServicePortConfig
    * @summary Parse and process given port data in config
    * @param {mixed} port - configured port
-   * @return {promise} promise - resolving with unassigned port
+   * @return {promise} promise - resolving with unassigned port, rejecting when no free port is found
    */
   _parseServicePortConfig(port) {
     //No port given, get unassigned port from standard ranges
-    if (typeof port === 'undefined' || !port) {
-      return new Promise((resolve, reject) => {
-        this._getUnassignedRandomServicePort(1024, 65535, (port) => {
+    if (typeof port === 'undefined' || !port || port == 0) {
+      port = '1024-65535';
+    }
+    return new Promise((resolve, reject) => {
+      var portRanges = port.toString().split(",")
+        .map( p => {
+          p = p.trim();
+          const ipRe = '(102[4-9]|10[3-9]\\d|1[1-9]\\d{2}|[2-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])';
+          let matches = p.match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
+          if (matches !== null) {
+            return p;
+          } else {
+            matches = p.match(new RegExp(`^${ipRe}$`, 'g'));
+            if (matches !== null) {
+              return p;
+            }
+          }
+          return null;
+        })
+        .filter(p => p != null);
+      let receivedCallBacks = 0;
+      if (portRanges.length == 0) {
+        reject('servicePort configuration does not contain no valid port(s)');
+        return;
+      }
+      portRanges.forEach((rangeToCheck, index) => {
+        let min = 0;
+        let max = 0;
+        let foundRanges = rangeToCheck.split('-');
+        if (foundRanges.length == 1) {
+          min = foundRanges[0];
+          max = min;
+        } else {
+          min = foundRanges[0];
+          max = foundRanges[1];
+        }
+        this._getUnassignedRandomServicePort(parseInt(min), parseInt(max), (port) => {
+          receivedCallBacks++;
           if (port !== 0) {
             resolve(port);
-          } else {
-            reject('No available service port found');
+            return;
+          }
+          else {
+            if (receivedCallBacks ===  portRanges.length) {
+              reject('No available service port in given port range found');
+            }
           }
         });
       });
-    } else {
-      //Port range given, get unassigned port within given range
-      const ipRe = '(102[4-9]|10[3-9]\\d|1[1-9]\\d{2}|[2-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])';
-      const matches = port.toString().match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
-      if (matches !== null) {
-        let foundRanges = matches[0].split('-');
-        return new Promise((resolve, reject) => {
-          this._getUnassignedRandomServicePort(parseInt(foundRanges[0]), parseInt(foundRanges[1]), (port) => {
-            if (port !== 0) {
-              resolve(port);
-            } else {
-              reject('No available service port in given port range found');
-            }
-          });
-        });
-      } else {
-        //Fixed port given, check if unassigned
-        return new Promise((resolve, reject) => {
-          this._getUnassignedRandomServicePort(parseInt(port), parseInt(port), (port) => {
-            if (port !== 0) {
-              resolve(port);
-            } else {
-              reject('Defined service port is not available');
-            }
-          });
-        });
-      }
-    }
+    });
   }
 
   /**
