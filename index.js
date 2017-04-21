@@ -13,10 +13,9 @@ const net = require('net');
 const EventEmitter = require('events');
 const util = require('util');
 const humanize = require('humanize-duration');
-const spawn = require('child_process').spawn;
 const Route = require('route-parser');
 
-const request = require('request');
+const fetch = require('node-fetch');
 const Utils = require('fwsp-jsutils');
 const ServerResponse = require('fwsp-server-response');
 let serverResponse = new ServerResponse();
@@ -29,7 +28,7 @@ const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
 const PRESENCE_UPDATE_INTERVAL = 500; // unit = milli-seconds, so every half second
-const HEALTH_UPDATE_INTERVAL = 500;
+const HEALTH_UPDATE_INTERVAL = 5000;
 const KEY_EXPIRATION_TTL = parseInt((PRESENCE_UPDATE_INTERVAL / 1000) * 2);
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 
@@ -47,6 +46,7 @@ class Hydra extends EventEmitter {
   constructor() {
     super();
 
+    this.instanceID = 'not set';
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
     this.messageChannelPool = {};
@@ -564,52 +564,7 @@ class Hydra extends EventEmitter {
     let entry = Object.assign({
       updatedOn: this._getTimeStamp()
     }, this._getHealth());
-    if (entry) {
-      this._getUsedDiskSpace()
-        .then((usedspace) => {
-          entry = Utils.safeJSONStringify(Object.assign({}, entry, {
-            usedDiskSpace: usedspace
-          }));
-          if (entry) {
-            this.redisdb.setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL, entry);
-          }
-        })
-        .catch((err) => {
-          this._logMessage('error', err.message);
-        });
-    }
-  }
-
-  /**
-   * @name _getUsedDiskSpace
-   * @summary Get used disk space for current volume.
-   * @return {promise} promise - promise which resolves with total used disk space
-   */
-  _getUsedDiskSpace() {
-    return new Promise((resolve, reject) => {
-      const USED_DISKSPACE_FIELD = 7;
-      const SECOND_LINE = 1; // zero index ;-)
-      let df = spawn('df', ['-k', '.']);
-      df.on('error', (err) => {
-        if (err.code === 'ENOENT') {
-          // df command could not be executed on host environment.
-          // this is currently the case on Windows - cjus
-          resolve('not supported on os');
-        } else {
-          reject(err);
-        }
-      });
-      df.stdout.on('data', (data) => {
-        let lines = data.toString().split('\n');
-        let results = lines[SECOND_LINE]
-          .split(' ')
-          .filter((element) => element !== '');
-        resolve(results[USED_DISKSPACE_FIELD]);
-      });
-      df.stderr.on('data', (data) => {
-        reject(data);
-      });
-    });
+    this.redisdb.setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL, Utils.safeJSONStringify(entry));
   }
 
   /**
@@ -1062,7 +1017,6 @@ class Hydra extends EventEmitter {
             instance = Utils.safeJSONParse(result);
             let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
             let options = {
-              url,
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -1074,36 +1028,39 @@ class Hydra extends EventEmitter {
               options.headers.Authorization = umfmsg.authorization;
             }
             if (umfmsg.body) {
-              options.body = Utils.safeJSONStringify(umfmsg.body);
+              let httpMethod = parsedRoute.httpMethod.toUpperCase();
+              if (httpMethod === 'POST' || httpMethod === 'PUT') {
+                options.body = Utils.safeJSONStringify(umfmsg.body);
+              }
             }
-            request(options, (error, response, body) => {
-              if (!error) {
-                if (response.headers['content-type'] && response.headers['content-type'].indexOf('json') > -1) {
-                  let bdy = Utils.safeJSONParse(body);
-                  if (bdy.statusCode) {
-                    resolve(bdy);
-                  } else {
-                    let resObject = serverResponse.createResponseObject(response.statusCode, {
-                      result: bdy
-                    });
-                    resolve(resObject);
-                  }
-                } else {
-                  resolve({
-                    headers: response.headers,
-                    body,
-                    statusCode: response.statusCode
-                  });
+
+            let status = 0;
+            fetch(url, options)
+              .then((res) => {
+                status = res.status;
+                let ct = res.headers.get('content-type');
+                if (ct && ct.indexOf('json') > -1) {
+                  return res.json();
                 }
-              } else {
+              })
+              .then((json) => {
+                if (json.statusCode) {
+                  resolve(json);
+                } else {
+                  let resObject = serverResponse.createResponseObject(status, {
+                    result: json
+                  });
+                  resolve(resObject);
+                }
+              })
+              .catch((_err) => {
                 instanceList.shift();
                 if (instanceList.length === 0) {
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
                   this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject);
                 }
-              }
-            });
+              });
           }
         });
       }
@@ -1146,8 +1103,8 @@ class Hydra extends EventEmitter {
 
       // check if a non-service message (HTTP passthrough) is being sent and handle accordingly
       if (parsedRoute.serviceName.indexOf('http') === 0) {
+        let url = `${parsedRoute.serviceName}${parsedRoute.apiRoute}`;
         let options = {
-          url: `${parsedRoute.serviceName}${parsedRoute.apiRoute}`,
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -1158,19 +1115,34 @@ class Hydra extends EventEmitter {
         if (umfmsg.authorization) {
           options.headers.Authorization = umfmsg.authorization;
         }
-        if (umfmsg.body && (parsedRoute.httpMethod === 'post' || parsedRoute.httpMethod === 'put')) {
-          options.body = Utils.safeJSONStringify(umfmsg.body);
-        }
-        request(options, (error, response, body) => {
-          if (!error) {
-            let resObject = serverResponse.createResponseObject(response.statusCode, {
-              result: Utils.safeJSONParse(body)
-            });
-            resolve(resObject);
-          } else {
-            resolve(this._createServerResponseWithReason(response.statusCode, error.message));
+        if (umfmsg.body) {
+          let httpMethod = parsedRoute.httpMethod.toUpperCase();
+          if (httpMethod === 'POST' || httpMethod === 'PUT') {
+            options.body = Utils.safeJSONStringify(umfmsg.body);
           }
-        });
+        }
+        let status = 0;
+        fetch(url, options)
+          .then((res) => {
+            status = res.status;
+            let ct = res.headers.get('content-type');
+            if (ct && ct.indexOf('json') > -1) {
+              return res.json();
+            }
+          })
+          .then((json) => {
+            if (json.statusCode) {
+              resolve(json);
+            } else {
+              let resObject = serverResponse.createResponseObject(status, {
+                result: json
+              });
+              resolve(resObject);
+            }
+          })
+          .catch((err) => {
+            resolve(this._createServerResponseWithReason(status, err.message));
+          });
         return;
       }
 
