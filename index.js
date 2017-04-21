@@ -1497,9 +1497,13 @@ class Hydra extends EventEmitter {
   _parseServicePortConfig(port) {
     //No port given, get unassigned port from standard ranges
     if (typeof port === 'undefined' || !port) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this._getUnassignedRandomServicePort(1024, 65535, (port) => {
-          resolve(port);
+          if (port !== 0) {
+            resolve(port);
+          } else {
+            reject('No available service port found');
+          }
         });
       });
     } else {
@@ -1508,16 +1512,24 @@ class Hydra extends EventEmitter {
       const matches = port.toString().match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
       if (matches !== null) {
         let foundRanges = matches[0].split('-');
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           this._getUnassignedRandomServicePort(parseInt(foundRanges[0]), parseInt(foundRanges[1]), (port) => {
-            resolve(port);
+            if (port !== 0) {
+              resolve(port);
+            } else {
+              reject('No available service port in given port range found');
+            }
           });
         });
       } else {
         //Fixed port given, check if unassigned
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           this._getUnassignedRandomServicePort(parseInt(port), parseInt(port), (port) => {
-            resolve(port);
+            if (port !== 0) {
+              resolve(port);
+            } else {
+              reject('Defined service port is not available');
+            }
           });
         });
       }
@@ -1527,15 +1539,29 @@ class Hydra extends EventEmitter {
   /**
    * @name _getUnassignedRandomServicePort
    * @summary retrieve a free service port in given range
-   * @param {number} min - Minimum port number
-   * @param {number} max - Maximum port number
+   * @param {number} min - Minimum port number, included
+   * @param {number} max - Maximum port number, included
    * @param {function} callback - Callback function when done
    * @return {undefined}
    **/
-  _getUnassignedRandomServicePort(min, max, callback) {
+  _getUnassignedRandomServicePort(min, max, callback, portsTried) {
     const instance = this;
     const host = this.config.serviceIP;
-    const port = Math.floor(Math.random() * (max - min + 1)) + min;
+    if (typeof portsTried === 'undefined') {
+      portsTried =  [];
+    } else {
+      if (portsTried.length == (max - min + 1)) {
+        callback(0);
+        return;
+      }
+    }
+
+    let port = Math.floor(Math.random() * (max - min + 1)) + min;
+    while (portsTried.indexOf(port) !== -1) {
+      port = Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    portsTried.push(port);
+
     const server = require('net').createServer();
     server.listen({port, host}, () => {
       server.once('close', () => {
@@ -1544,7 +1570,7 @@ class Hydra extends EventEmitter {
       server.close();
     })
     server.on('error', () => {
-      instance._getUnassignedRandomServicePort(min, max, callback);
+      instance._getUnassignedRandomServicePort(min, max, callback, portsTried);
     });
   }
 
