@@ -1047,6 +1047,8 @@ class Hydra extends EventEmitter {
                 let ct = res.headers.get('content-type');
                 if (ct && ct.indexOf('json') > -1) {
                   return res.json();
+                } else {
+                  return res.text();
                 }
               })
               .then((json) => {
