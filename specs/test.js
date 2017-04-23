@@ -46,6 +46,7 @@ describe('Hydra', function() {
 
   beforeEach(() => {
     hydra = require('../index.js');
+    redis.removeAllListeners('message');
   });
 
   afterEach((done) => {
@@ -159,6 +160,63 @@ describe('Hydra', function() {
             expect(serviceInfo.servicePort).to.equal(5000);
             expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
             done();
+          });
+      });
+  });
+
+  /**
+  * @description getServiceName should return name of service
+  */
+  it('should see that getServiceName returns name of service', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((serviceInfo) => {
+            expect(serviceInfo).not.null;
+            expect(serviceInfo.serviceName).to.equal('test-service');
+            expect(hydra.getServiceName()).to.equal(serviceInfo.serviceName);
+            done();
+          });
+      });
+  });
+
+  /**
+  /**
+  * @description getServices should return a list of services
+  */
+  it('should see that getServices returns list services', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            hydra.getServices()
+              .then((services) => {
+                expect(services.length).to.be.above(0);
+                expect(services[0]).to.have.property('serviceName');
+                expect(services[0]).to.have.property('type');
+                expect(services[0]).to.have.property('registeredOn');
+                done();
+              });
+          });
+      });
+  });
+
+  /* @description getServiceNodes should return a list of services
+  */
+  it('should see that getServiceNodes returns list services', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            hydra.getServiceNodes()
+              .then((nodes) => {
+                expect(nodes.length).to.be.above(0);
+                expect(nodes[0]).to.have.property('serviceName');
+                expect(nodes[0]).to.have.property('instanceID');
+                expect(nodes[0]).to.have.property('processID');
+                expect(nodes[0]).to.have.property('ip');
+                done();
+              });
           });
       });
   });
