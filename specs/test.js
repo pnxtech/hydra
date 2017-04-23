@@ -46,6 +46,7 @@ describe('Hydra', function() {
 
   beforeEach(() => {
     hydra = require('../index.js');
+    redis.removeAllListeners('message');
   });
 
   afterEach((done) => {
