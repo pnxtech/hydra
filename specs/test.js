@@ -271,9 +271,9 @@ describe('Hydra', function() {
             hydra.getServicePresence('test-service')
               .then((data) => {
                 expect(data).to.not.be.null;
-                expect(data.length).to.be.greater(0);
-                expect(data).to.have('processID');
-                expect(data.updatedOnTS).to.greater(1492906823975);
+                expect(data.length).to.be.above(0);
+                expect(data[0]).to.have.property('processID');
+                expect(data[0].updatedOnTS).to.be.above(1492906823975);
                 done();
               });
           });
