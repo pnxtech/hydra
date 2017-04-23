@@ -1513,10 +1513,13 @@ class Hydra extends EventEmitter {
         })
         .filter((p) => p != null);
       let receivedCallBacks = 0;
-      if (portRanges.length == 0) {
-        reject('servicePort configuration does not contain valid port(s)');
-        return;
+      if (portRanges.length === 0) {
+        portRanges.push(`${port}`);
       }
+      // if (portRanges.length == 0) {
+      //   reject('servicePort configuration does not contain valid port(s)');
+      //   return;
+      // }
       portRanges.forEach((rangeToCheck, _index) => {
         let min = 0;
         let max = 0;
