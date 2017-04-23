@@ -1,28 +1,20 @@
 {
   "name": "hydra",
-  "version": "1.2.0",
+  "version": "1.2.3",
+  "license": "MIT",
   "author": "Carlos Justiniano",
   "contributors": [
-    {
-      "name": "Carlos Justiniano",
-      "github": "cjus",
-      "email": "carlos.justiniano@gmail.com"
-    },
-    {
-      "name": "Eric Adum",
-      "github": "emadum",
-      "email": "eric.adum@gmail.com"
-    },
-    {
-      "name": "Artem Kochnev",
-      "github": "artemkochnev",
-      "email": "artemkochnev@gmail.com"
-    }
+    "Artem Kochnev <artemkochnev@gmail.com>",
+    "Carlos Justiniano <carlos.justiniano@gmail.com>",
+    "Eric Adum <eric.adum@gmail.com>",
+    "Jedediah Smith <jed@obdstudios.com>",
+    "Rolando Santamaria Maso <kyberneees@gmail.com>",
+    "Sebastiansch <s.schedlbauer@gmail.com>"
   ],
   "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
   "keywords": [
-    "flywheelsports",
     "hydra",
+    "hydra-core",
     "microservice"
   ],
   "main": "index.js",
@@ -39,23 +31,21 @@
   },
   "dependencies": {
     "bluebird": "3.5.0",
-    "fwsp-jsutils": "1.0.10",
-    "fwsp-redis-connection": "0.0.2",
-    "fwsp-server-response": "2.2.6",
-    "fwsp-umf-message": "0.4.3",
-    "humanize-duration": "3.10.0",
     "ip": "1.1.5",
+    "json-stringify-safe": "5.0.1",
     "node-fetch": "1.6.3",
     "redis": "2.7.1",
     "redis-url": "1.2.1",
-    "route-parser": "0.0.5"
+    "route-parser": "0.0.5",
+    "uuid": "3.0.1"
   },
   "devDependencies": {
     "chai": "3.5.0",
     "eslint": "3.19.0",
     "eslint-config-google": "0.7.1",
     "eslint-plugin-mocha": "4.9.0",
-    "mocha": "3.2.0"
+    "mocha": "3.2.0",
+    "redis-mock": "0.16.0"
   },
   "bin": {
     "hydra": "index.js"
