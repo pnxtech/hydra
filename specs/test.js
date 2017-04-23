@@ -49,12 +49,11 @@ describe('Hydra', function() {
   });
 
   afterEach((done) => {
-    hydra.shutdown();
-    setTimeout(() => {
+    hydra.shutdown().then(() => {
       let name = require.resolve('../index.js');
       delete require.cache[name];
       done();
-    }, 2000);
+    });
   });
 
   /**

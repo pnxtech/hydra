@@ -217,29 +217,34 @@ class Hydra extends EventEmitter {
    * @return {undefined}
    */
   _shutdown() {
-    clearInterval(this.presenceTimerInteval);
-    clearInterval(this.healthTimerInterval);
-
-    if (!this.testMode) {
-      this._logMessage('error', 'Service is shutting down.');
-      if (this.mcMessageChannelClient) {
-        this.mcMessageChannelClient.unsubscribe();
-        this.mcMessageChannelClient.quit();
+    return new Promise((resolve) => {
+      clearInterval(this.presenceTimerInteval);
+      clearInterval(this.healthTimerInterval);
+      const promises = [];
+      if (!this.testMode) {
+        this._logMessage('error', 'Service is shutting down.');
+        if (this.mcMessageChannelClient) {
+          promises.push(this.mcMessageChannelClient.unsubscribeAsync());
+          promises.push(this.mcMessageChannelClient.quitAsync());
+        }
+        if (this.mcDirectMessageChannelClient) {
+          promises.push(this.mcDirectMessageChannelClient.unsubscribeAsync());
+          promises.push(this.mcDirectMessageChannelClient.quitAsync());
+        }
       }
-      if (this.mcDirectMessageChannelClient) {
-        this.mcDirectMessageChannelClient.unsubscribe();
-        this.mcDirectMessageChannelClient.quit();
-      }
-    }
-    Object.keys(this.messageChannelPool).forEach((keyname) => {
-      this.messageChannelPool[keyname].quit();
-    });
-    if (this.redisdb) {
-      this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
-        this.redisdb.quit();
+      Object.keys(this.messageChannelPool).forEach((keyname) => {
+        promises.push(this.messageChannelPool[keyname].quitAsync());
       });
-    }
-    this.initialized = false;
+      if (this.redisdb) {
+        this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
+          this.redisdb.quit();
+          Promise.all(promises).then(resolve);
+        });
+      } else {
+        Promise.all(promises).then(resolve);
+      }
+      this.initialized = false;
+    });
   }
 
   /**
@@ -1664,7 +1669,7 @@ class IHydra extends Hydra {
    * @return {undefined}
    */
   shutdown() {
-    super._shutdown();
+    return super._shutdown();
   }
 
   /**
