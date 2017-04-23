@@ -1,5 +1,3 @@
-'use strict';
-
 const Promise = require('bluebird');
 Promise.series = (iterable, action) => {
   return Promise.mapSeries(
@@ -8,20 +6,17 @@ Promise.series = (iterable, action) => {
   );
 };
 
-const dns = require('dns');
 const net = require('net');
 const EventEmitter = require('events');
 const util = require('util');
-const humanize = require('humanize-duration');
 const Route = require('route-parser');
-
 const fetch = require('node-fetch');
-const Utils = require('fwsp-jsutils');
-const ServerResponse = require('fwsp-server-response');
-let serverResponse = new ServerResponse();
-const UMFMessage = require('fwsp-umf-message');
 
-const RedisConnection = require('fwsp-redis-connection');
+const Utils = require('./lib/utils');
+const UMFMessage = require('./lib/umfmessage');
+const RedisConnection = require('./lib/redis-connection');
+const ServerResponse = require('./lib/server-response');
+let serverResponse = new ServerResponse();
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
@@ -29,7 +24,7 @@ const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
 const PRESENCE_UPDATE_INTERVAL = 500; // unit = milli-seconds, so every half second
 const HEALTH_UPDATE_INTERVAL = 5000;
-const KEY_EXPIRATION_TTL = parseInt((PRESENCE_UPDATE_INTERVAL / 1000) * 2);
+const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL * 3);
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 
 /**
@@ -61,6 +56,8 @@ class Hydra extends EventEmitter {
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
     this.registeredRoutes = [];
     this.registeredPlugins = [];
+    this.presenceTimerInteval = null;
+    this.healthTimerInterval = null;
   }
 
   /**
@@ -88,10 +85,25 @@ class Hydra extends EventEmitter {
    * @name init
    * @summary Register plugins then continue initialization
    * @param {object} config - configuration object containing hydra specific keys/values
+   * @param {boolean} testMode - whether hydra is being started in unit test mode
    * @return {object} promise - resolves with this._init
    */
-  init(config) {
+  init(config, testMode) {
+    this.testMode = testMode;
     return new Promise((resolve, reject) => {
+      if (!config || !config.hydra) {
+        reject(new Error('Config missing hydra branch'));
+        return;
+      }
+      if (!config.hydra.redis) {
+        reject(new Error('Config missing hydra.redis branch'));
+        return;
+      }
+      if (!config.hydra.serviceName || !config.hydra.servicePort) {
+        reject(new Error('Config missing serviceName or servicePort'));
+        return;
+      }
+
       let loader = (newConfig) => {
         return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
           .then((..._results) => {
@@ -143,58 +155,51 @@ class Hydra extends EventEmitter {
    * @param {object} config - configuration object containing hydra specific keys/values
    * @return {object} promise - resolving if init success or rejecting otherwise
    */
-   _init(config) {
-     return new Promise((resolve, reject) => {
-       let ready = () => {
-         Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady())
-             .then((..._results) => {
-               resolve();
-             })
-             .catch((err) => this._logMessage('error', err.toString()));
-       };
-       this.config = config;
-       this._connectToRedis(this.config)
-           .then(() => {
-             if (!this.redisdb) {
-               reject(new Error('No Redis connection'));
-               return;
-             }
-             this._parseServicePortConfig(this.config.servicePort)
-                 .then((port) => {
-                   this.config.servicePort = port;
-                   this.serviceName = config.serviceName;
-                   if (this.serviceName && this.serviceName.length > 0) {
-                     this.serviceName = this.serviceName.toLowerCase();
-                   }
-                   this.serviceDescription = this.config.serviceDescription || 'not specified';
-                   this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
+  _init(config) {
+    return new Promise((resolve, reject) => {
+      let ready = () => {
+        Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady()).then((..._results) => {
+          resolve();
+        }).catch((err) => this._logMessage('error', err.toString()));
+      };
+      this.config = config;
+      this._connectToRedis(this.config).then(() => {
+        if (!this.redisdb) {
+          reject(new Error('No Redis connection'));
+          return;
+        }
+        return this._parseServicePortConfig(this.config.servicePort).then((port) => {
+          this.config.servicePort = port;
+          this.serviceName = config.serviceName;
+          if (this.serviceName && this.serviceName.length > 0) {
+            this.serviceName = this.serviceName.toLowerCase();
+          }
+          this.serviceDescription = this.config.serviceDescription || 'not specified';
+          this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
-                   // if serviceIP field contains a name rather than a dotted IP address
-                   // then use DNS to resolve the name to an IP address.
-                   if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-                     dns.lookup(this.config.serviceIP, (err, result) => {
-                       this.config.serviceIP = result;
-                       this._updateInstanceData();
-                       ready();
-                     });
-                   } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-                     let ip = require('ip');
-                     this.config.serviceIP = ip.address();
-                     this._updateInstanceData();
-                     ready();
-                   } else {
-                     this._updateInstanceData();
-                     ready();
-                   }
-                   return 0;
-                 })
-                 .catch((err) => {
-                   reject(err);
-                 });
-           })
-           .catch((err) => reject(err));
-     });
-   }
+          // if serviceIP field contains a name rather than a dotted IP address
+          // then use DNS to resolve the name to an IP address.
+          const dns = require('dns');
+          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+            dns.lookup(this.config.serviceIP, (err, result) => {
+              this.config.serviceIP = result;
+              this._updateInstanceData();
+              ready();
+            });
+          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+            let ip = require('ip');
+            this.config.serviceIP = ip.address();
+            this._updateInstanceData();
+            ready();
+          } else {
+            this._updateInstanceData();
+            ready();
+          }
+          return 0;
+        }).catch((err) => reject(err));
+      }).catch((err) => reject(err));
+    });
+  }
 
   /**
    * @name _updateInstanceData
@@ -212,14 +217,19 @@ class Hydra extends EventEmitter {
    * @return {undefined}
    */
   _shutdown() {
-    this._logMessage('error', 'Service is shutting down.');
-    if (this.mcMessageChannelClient) {
-      this.mcMessageChannelClient.unsubscribe();
-      this.mcMessageChannelClient.quit();
-    }
-    if (this.mcDirectMessageChannelClient) {
-      this.mcDirectMessageChannelClient.unsubscribe();
-      this.mcDirectMessageChannelClient.quit();
+    clearInterval(this.presenceTimerInteval);
+    clearInterval(this.healthTimerInterval);
+
+    if (!this.testMode) {
+      this._logMessage('error', 'Service is shutting down.');
+      if (this.mcMessageChannelClient) {
+        this.mcMessageChannelClient.unsubscribe();
+        this.mcMessageChannelClient.quit();
+      }
+      if (this.mcDirectMessageChannelClient) {
+        this.mcDirectMessageChannelClient.unsubscribe();
+        this.mcDirectMessageChannelClient.quit();
+      }
     }
     Object.keys(this.messageChannelPool).forEach((keyname) => {
       this.messageChannelPool[keyname].quit();
@@ -242,7 +252,7 @@ class Hydra extends EventEmitter {
   _connectToRedis(config) {
     let retryStrategy = config.redis.retry_strategy;
     delete config.redis.retry_strategy;
-    let redisConnection = new RedisConnection(config.redis);
+    let redisConnection = new RedisConnection(config.redis, 0, this.testMode);
     HYDRA_REDIS_DB = redisConnection.redisConfig.db;
     return redisConnection.connect(retryStrategy)
       .then((client) => {
@@ -341,8 +351,14 @@ class Hydra extends EventEmitter {
         if (err) {
           reject(new Error('Unable to set :service key in redis db.'));
         } else {
+          let testRedis;
+          if (this.testMode) {
+            let redisConnection;
+            redisConnection = new RedisConnection(this.config.redis, 0, this.testMode);
+            testRedis = redisConnection.getRedis();
+          }
           // Setup service message courier channels
-          this.mcMessageChannelClient = this.redisdb.duplicate();
+          this.mcMessageChannelClient = this.testMode ? testRedis.createClient() : this.redisdb.duplicate();
           this.mcMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}`);
           this.mcMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -352,7 +368,7 @@ class Hydra extends EventEmitter {
             }
           });
 
-          this.mcDirectMessageChannelClient = this.redisdb.duplicate();
+          this.mcDirectMessageChannelClient = this.testMode ? testRedis.createClient() : this.redisdb.duplicate();
           this.mcDirectMessageChannelClient.subscribe(`${mcMessageKey}:${serviceName}:${this.instanceID}`);
           this.mcDirectMessageChannelClient.on('message', (channel, message) => {
             let msg = Utils.safeJSONParse(message);
@@ -363,17 +379,17 @@ class Hydra extends EventEmitter {
           });
 
           // Schedule periodic updates
-          setInterval(this._updatePresence, PRESENCE_UPDATE_INTERVAL);
-          setInterval(this._updateHealthCheck, HEALTH_UPDATE_INTERVAL);
+          this.presenceTimerInteval = setInterval(this._updatePresence, PRESENCE_UPDATE_INTERVAL);
+          this.healthTimerInterval = setInterval(this._updateHealthCheck, HEALTH_UPDATE_INTERVAL);
+
+          // Update presence immediately without waiting for next update interval.
+          this._updatePresence();
 
           resolve({
             serviceName: this.serviceName,
             serviceIP: this.config.serviceIP,
             servicePort: this.config.servicePort
           });
-
-          // Update presence immediately without waiting for next update interval.
-          this._updatePresence();
         }
       });
     });
@@ -580,7 +596,8 @@ class Hydra extends EventEmitter {
    * @return {object} obj - object containing server info
    */
   _getHealth() {
-    let lines, keyval;
+    let lines = [];
+    let keyval = [];
     let map = {};
     let memory = util.inspect(process.memoryUsage());
 
@@ -602,7 +619,6 @@ class Hydra extends EventEmitter {
       platform: process.platform,
       nodeVersion: process.version,
       memory: map,
-      uptime: humanize(uptimeInSeconds * 1000),
       uptimeSeconds: uptimeInSeconds
     };
   }
@@ -1468,13 +1484,13 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - resolving with unassigned port, rejecting when no free port is found
    */
   _parseServicePortConfig(port) {
-    //No port given, get unassigned port from standard ranges
+    // No port given, get unassigned port from standard ranges
     if (typeof port === 'undefined' || !port || port == 0) {
       port = '1024-65535';
     }
     return new Promise((resolve, reject) => {
-      var portRanges = port.toString().split(",")
-        .map( p => {
+      let portRanges = port.toString().split(',')
+        .map((p) => {
           p = p.trim();
           const ipRe = '(102[4-9]|10[3-9]\\d|1[1-9]\\d{2}|[2-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])';
           let matches = p.match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
@@ -1488,13 +1504,13 @@ class Hydra extends EventEmitter {
           }
           return null;
         })
-        .filter(p => p != null);
+        .filter((p) => p != null);
       let receivedCallBacks = 0;
       if (portRanges.length == 0) {
         reject('servicePort configuration does not contain valid port(s)');
         return;
       }
-      portRanges.forEach((rangeToCheck, index) => {
+      portRanges.forEach((rangeToCheck, _index) => {
         let min = 0;
         let max = 0;
         let foundRanges = rangeToCheck.split('-');
@@ -1510,9 +1526,8 @@ class Hydra extends EventEmitter {
           if (port !== 0) {
             resolve(port);
             return;
-          }
-          else {
-            if (receivedCallBacks ===  portRanges.length) {
+          } else {
+            if (receivedCallBacks === portRanges.length) {
               reject('No available service port in given port range found');
             }
           }
@@ -1527,13 +1542,14 @@ class Hydra extends EventEmitter {
    * @param {number} min - Minimum port number, included
    * @param {number} max - Maximum port number, included
    * @param {function} callback - Callback function when done
+   * @param {array} portsTried - Ports which have been tried
    * @return {undefined}
    **/
   _getUnassignedRandomServicePort(min, max, callback, portsTried) {
     const instance = this;
     const host = this.config.serviceIP;
     if (typeof portsTried === 'undefined') {
-      portsTried =  [];
+      portsTried = [];
     } else {
       if (portsTried.length == (max - min + 1)) {
         callback(0);
@@ -1551,9 +1567,9 @@ class Hydra extends EventEmitter {
     server.listen({port, host}, () => {
       server.once('close', () => {
         callback(port);
-      })
+      });
       server.close();
-    })
+    });
     server.on('error', () => {
       instance._getUnassignedRandomServicePort(min, max, callback, portsTried);
     });
@@ -1623,10 +1639,11 @@ class IHydra extends Hydra {
    * @name init
    * @summary Initialize Hydra with config object.
    * @param {object} config - configuration object containing hydra specific keys/values
+   * @param {boolean} testMode - whether hydra is being started in unit test mode
    * @return {object} promise - resolving if init success or rejecting otherwise
    */
-  init(config) {
-    return super.init(config);
+  init(config, testMode = false) {
+    return super.init(config, testMode);
   }
 
   /**

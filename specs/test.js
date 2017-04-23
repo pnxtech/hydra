@@ -1,177 +1,282 @@
-'use strict';
+/* eslint no-invalid-this: 0 */
 
 require('./helpers/chai.js');
-require('sinon');
 
+let hydra;
 const version = require('../package.json').version;
-const redis = require('redis');
-const invalidConfig = {};
-const validConfig = {
-  'serviceName': 'test-service',
-  'serviceDescription': 'Raison d\'etre',
-  'serviceIP': '127.0.0.1',
-  'servicePort': 5000,
-  'serviceType': 'test',
-  'redis': {
-    'url': '127.0.0.1',
-    'port': 6379,
-    'db': 0
-  }
-};
+const redis = require('redis-mock');
+const redisPort = 6379;
+const redisUrl = '127.0.0.1';
+const SECOND = 1000;
+
+/**
+* @name getConfig
+* @summary Get a new copy of a config object
+* @return {undefined}
+*/
+function getConfig() {
+  return Object.assign({}, {
+    'hydra': {
+      'serviceName': 'test-service',
+      'serviceDescription': 'Raison d\'etre',
+      'serviceIP': '127.0.0.1',
+      'servicePort': 5000,
+      'serviceType': 'test',
+      'redis': {
+        'url': redisUrl,
+        'port': redisPort,
+        'db': 0
+      }
+    },
+    version
+  });
+}
 
 /**
 * Change into specs folder so that config loading can find file using relative path.
 */
 process.chdir('./specs');
 
-function cleanupRedisEntries(done) {
-  let redisClient = redis.createClient(validConfig.redis.port, validConfig.redis.url);
-  redisClient.multi()
-    .del('hydra:service:test-service:service')
-    .hdel('hydra:service:nodes', '73909f8c96a9d08e876411c0a212a1f4')
-    .exec(done);
-  redisClient.quit();
-}
+/**
+* @name Tests
+* @summary Hydra Test Suite
+*/
+describe('Hydra', function() {
+  this.timeout(SECOND * 5);
 
-describe('Hydra', () => {
-  describe('Initialization', () => {
-    it('should succeed when provided with a configuration object', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.shutdown();
-          expect(hydra.getServiceName()).to.equal(validConfig.serviceName);
-          expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
-          done();
-        });
-    });
-    it('should fail if not provided with a configuration object', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(invalidConfig)
-        .then(() => {
-          hydra.shutdown();
-          expect(hydra.getServiceName()).to.be.undefined;
-          done();
-        });
-    });
+  beforeEach(() => {
+    hydra = require('../index.js');
   });
 
-  describe('Service', () => {
-    beforeEach(function(done) {
-      cleanupRedisEntries(done);
-    });
+  afterEach((done) => {
+    hydra.shutdown();
+    setTimeout(() => {
+      let name = require.resolve('../index.js');
+      delete require.cache[name];
+      done();
+    }, 2000);
+  });
 
-    after(function(done) {
-      cleanupRedisEntries(done);
-    });
+  /**
+  * @description Confirms that hydra can connect to a redis instance
+  */
+  it('should be able to connect to redis', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        done();
+      })
+      .catch((_err) => {
+        expect(true);
+      });
+  });
 
-    it('should not be discoverable if not registered', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.findService(validConfig.serviceName)
-            .then((info) => {
-              hydra.shutdown();
-              expect(false).to.be.true;
-              done();
-            })
-            .catch((err) => {
-              hydra.shutdown();
-              expect(err.message).to.be.equal('Can\'t find test-service service');
-              done();
+  /**
+  * @description Hydra should fail to load without a configuration file
+  */
+  it('should fail without config file', (done) => {
+    hydra.init({}, true)
+      .then(() => {
+        expect(true).to.be.false;
+        done();
+      })
+      .catch((err) => {
+        expect(err).to.not.be.null;
+        expect(err.message).to.equal('Config missing hydra branch');
+        done();
+      });
+  });
+
+  /**
+  * @description Hydra should fail to load without a hydra.redis branch in configuration
+  */
+  it('should fail without config hydra.redis branch', (done) => {
+    let config = getConfig();
+    delete config.hydra.redis;
+    hydra.init(config, true)
+      .then(() => {
+        expect(true).to.be.false;
+        done();
+      })
+      .catch((err) => {
+        expect(err).to.not.be.null;
+        expect(err.message).to.equal('Config missing hydra.redis branch');
+        done();
+      });
+  });
+
+  /**
+  * @description Hydra should fail if serviceName is missing in config
+  */
+  it('should fail without serviceName config', (done) => {
+    let config = getConfig();
+    delete config.hydra.serviceName;
+    hydra.init(config, true)
+      .then(() => {
+        expect(true).to.be.false;
+        done();
+      })
+      .catch((err) => {
+        expect(err).to.not.be.null;
+        expect(err.message).to.equal('Config missing serviceName or servicePort');
+        done();
+      });
+  });
+
+  /**
+  * @description Confirms that when hydra registers as a service the expected keys can be found in redis
+  */
+  it('should be able to register as a service', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        let r = redis.createClient();
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            setTimeout(() => {
+              r.keys('*', (err, data) => {
+                expect(err).to.be.null;
+                expect(data.length).to.equal(3);
+                expect(data).to.include('hydra:service:test-service:service');
+                expect(data).to.include('hydra:service:test-service:73909f8c96a9d08e876411c0a212a1f4:presence');
+                expect(data).to.include('hydra:service:nodes');
+                done();
+              });
+              r.quit();
+            }, SECOND);
+          });
+      });
+  });
+
+  /**
+  * @description expect serviceName, serviceIP, servicePort and instanceID to exists upon service registration
+  */
+  it('should have a serviceName, serviceIP, servicePort and instanceID', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((serviceInfo) => {
+            expect(serviceInfo).not.null;
+            expect(serviceInfo.serviceName).to.equal('test-service');
+            expect(serviceInfo.serviceIP).to.equal('127.0.0.1');
+            expect(serviceInfo.servicePort).to.equal(5000);
+            expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
+            done();
+          });
+      });
+  });
+
+  /**
+  * @description presence information should update in redis for a running hydra service
+  */
+  it('should update presence', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        let r = redis.createClient();
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            let instanceID = hydra.getInstanceID();
+            r.hget('hydra:service:nodes', instanceID, (err, data) => {
+              expect(err).to.be.null;
+              expect(data).to.not.be.null;
+
+              let entry = JSON.parse(data);
+              setTimeout(() => {
+                r.hget('hydra:service:nodes', instanceID, (err, data) => {
+                  expect(err).to.be.null;
+                  expect(data).to.not.be.null;
+                  let entry2 = JSON.parse(data);
+                  expect(entry2.updatedOn).to.not.equal(entry.updatedOn);
+                  r.quit();
+                  done();
+                });
+              }, SECOND);
             });
-        });
-    });
-    it('should discover a service which has been registered', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.registerService()
-            .then((serviceInfo) => {
-              expect(serviceInfo.serviceName).to.equal(validConfig.serviceName);
-              expect(serviceInfo.serviceIP).to.equal(validConfig.serviceIP);
-              expect(serviceInfo.servicePort).to.equal(validConfig.servicePort);
-              hydra.findService(validConfig.serviceName)
-                .then((info) => {
-                  hydra.shutdown();
-                  expect(info.type).to.equal(validConfig.serviceType);
+          });
+      });
+  });
+
+  /**
+  * @description ensure keys expire on shutdown
+  */
+  it('should expire redis keys on shutdown', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        let r = redis.createClient();
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            setTimeout(() => {
+              r.get('hydra:service:test-service:73909f8c96a9d08e876411c0a212a1f4:presence', (err, data) => {
+                expect(err).to.be.null;
+                expect(data).to.not.be.null;
+                done();
+                r.quit();
+              });
+            }, SECOND * 3);
+          });
+      });
+  });
+
+  /**
+  * @summary service should be discoverable
+  */
+  it('should be able to discover a service', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            setTimeout(() => {
+              hydra.findService('test-service')
+                .then((data) => {
+                  expect(data).not.null;
+                  expect(data.serviceName).to.equal('test-service');
+                  expect(data.type).to.equal('test');
+                  done();
+                });
+            }, SECOND);
+          });
+      });
+  });
+
+  /**
+  * @summary invalid service should not be discoverable
+  */
+  it('should return an error if a service doesn\'t exists', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            setTimeout(() => {
+              hydra.findService('xyxyx-service')
+                .then((_data) => {
+                  expect(true).to.be.false;
                   done();
                 })
                 .catch((err) => {
-                  expect(false).to.be.true;
+                  expect(err).to.not.be.null;
+                  expect(err.message).to.equal('Can\'t find xyxyx-service service');
                   done();
                 });
-            });
-        });
-    });
-    it('should be able to retrieve a list of services', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.registerService()
-            .then(() => {
-              hydra.getServices()
-                .then((services) => {
-                  hydra.shutdown();
-                  expect(services.length).to.be.above(0);
-                  expect(services[0].serviceName).to.equal(validConfig.serviceName);
-                  done();
-                });
-            });
-        });
-    });
-    it('should be able to detect the presence of a registered services', (done) => {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.registerService()
-            .then(() => {
-              hydra.getServicePresence(validConfig.serviceName)
-                .then((presence) => {
-                  hydra.shutdown();
-                  expect(presence[0]).to.have.property('instanceID');
-                  expect(presence[0]).to.have.property('updatedOn');
-                  expect(presence[0]).to.have.property('processID');
-                  expect(presence[0].processID).to.be.above(0);
-                  done();
-                });
-            });
-        });
-    });
+            }, SECOND);
+          });
+      });
   });
 
-  describe('Messaging', () => {
-    it('should be able to send message to a service', function(done) {
-      const hydra = require('../index.js');
-      hydra.init(validConfig)
-        .then(() => {
-          hydra.registerService()
-            .then(() => {
-              let msg = hydra.createUMFMessage({
-                to: `${validConfig.serviceName}:/`,
-                from: 'chai-test:/',
-                body: {
-                  title: 'Microservices FTW!'
-                }
+  /**
+  * @summary get service presence info
+  */
+  it('should be able to retrieve service presence', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.registerService()
+          .then((_serviceInfo) => {
+            hydra.getServicePresence('test-service')
+              .then((data) => {
+                expect(data).to.not.be.null;
+                expect(data.length).to.be.greater(0);
+                expect(data).to.have('processID');
+                expect(data.updatedOnTS).to.greater(1492906823975);
+                done();
               });
-              return hydra.sendMessage(msg)
-                .catch((err) => {
-                  console.log('err', err);
-                });
-            })
-            .catch((err) => {
-              console.log('err', err);
-            });
-        });
-        hydra.on('message', (message) => {
-          hydra.shutdown();
-          expect(message).to.have.property('mid');
-          expect(message).to.have.property('ts');
-          expect(message).to.have.property('ver');
-          expect(message.bdy.title).to.equal('Microservices FTW!');
-          done();
-        });
-    });
+          });
+      });
   });
-
 });
