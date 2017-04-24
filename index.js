@@ -99,7 +99,7 @@ class Hydra extends EventEmitter {
         reject(new Error('Config missing hydra.redis branch'));
         return;
       }
-      if (!config.hydra.serviceName || !config.hydra.servicePort) {
+      if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
         reject(new Error('Config missing serviceName or servicePort'));
         return;
       }
@@ -168,8 +168,9 @@ class Hydra extends EventEmitter {
           reject(new Error('No Redis connection'));
           return;
         }
-        return this._parseServicePortConfig(this.config.servicePort).then((port) => {
-          this.config.servicePort = port;
+        // return this._parseServicePortConfig(this.config.servicePort).then((port) => {
+          this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
+          // this.config.servicePort = port;
           this.serviceName = config.serviceName;
           if (this.serviceName && this.serviceName.length > 0) {
             this.serviceName = this.serviceName.toLowerCase();
@@ -196,7 +197,7 @@ class Hydra extends EventEmitter {
             ready();
           }
           return 0;
-        }).catch((err) => reject(err));
+        // }).catch((err) => reject(err));
       }).catch((err) => reject(err));
     });
   }
@@ -1485,6 +1486,17 @@ class Hydra extends EventEmitter {
   }
 
   /**
+   * @name _getRandomServicePort
+   * @summary Retrieves a random TCP/IP port.
+   * @return {number} port - new random socket port
+   */
+  _getRandomServicePort() {
+    const maxSocketPort = 65535;
+    const nonPriviliagePortBountry = 1024;
+    return parseInt(nonPriviliagePortBountry + (new Date().getTime() % (Math.random() * (maxSocketPort - nonPriviliagePortBountry))));
+  }
+
+  /**
    * @name _parseServicePortConfig
    * @summary Parse and process given port data in config
    * @param {mixed} port - configured port
@@ -1513,13 +1525,10 @@ class Hydra extends EventEmitter {
         })
         .filter((p) => p != null);
       let receivedCallBacks = 0;
-      if (portRanges.length === 0) {
-        portRanges.push(`${port}`);
+      if (portRanges.length == 0) {
+        reject('servicePort configuration does not contain valid port(s)');
+        return;
       }
-      // if (portRanges.length == 0) {
-      //   reject('servicePort configuration does not contain valid port(s)');
-      //   return;
-      // }
       portRanges.forEach((rangeToCheck, _index) => {
         let min = 0;
         let max = 0;
