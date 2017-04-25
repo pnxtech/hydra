@@ -8,14 +8,13 @@ Hydra offers features such as service discovery, distributed messaging, message 
 
 [See our quick start guide](https://www.hydramicroservice.com/docs/quick-start/)
 
-If you're just getting started with Node Microservices and you have ExpressJS experience you should first look at our [HydraExpress](https://github.com/flywheelsports/hydra-express) project. 
+If you're just getting started with Node Microservices and you have ExpressJS experience you should first look at our [HydraExpress](https://github.com/flywheelsports/hydra-express) project.
 
 > If you want a lighter-weight Express integration or you're using Hapi, Koa, Sails.js, Restify or Restana then checkout the [Hydra Integration Project](https://www.npmjs.com/package/hydra-integration).
 
 ### Documentation
 
-We're building a dedicated documentation site for hydra at: https://www.hydramicroservice.com
-Our older docs are still available at: [Full documentation](documentation.md)
+Visit our dedicated documentation site for hydra at: https://www.hydramicroservice.com
 
 Hydra works great on AWS using Docker containers and Swarm mode, see: https://www.hydramicroservice.com/docs/docker/docker.html
 
