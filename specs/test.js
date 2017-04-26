@@ -157,7 +157,7 @@ describe('Hydra', function() {
             expect(serviceInfo).not.null;
             expect(serviceInfo.serviceName).to.equal('test-service');
             expect(serviceInfo.serviceIP).to.equal('127.0.0.1');
-            expect(serviceInfo.servicePort).to.equal(5000);
+            expect(serviceInfo.servicePort).to.equal('5000');
             expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
             done();
           });
