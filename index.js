@@ -1390,6 +1390,24 @@ class Hydra extends EventEmitter {
       });
     });
   }
+  
+  /**
+   * @name _hasServicePresence
+   * @summary Indicate if a service has presence.
+   * @description Indicates if a service has presence, meaning the 
+   *              service is running in at least one node.
+   * @param {string} name - service name - note service name is case insensitive
+   * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
+   */
+  _hasServicePresence(name) {
+    name = name || this._getServiceName();
+    return new Promise((resolve, reject) => {
+      this._getKeys(`*:${name}:*:presence`)
+        .then(instances => {
+          resolve(instances.length !== 0);
+        }).catch(reject);
+    });
+  }
 
   /**
    * @name _getConfig
@@ -1942,6 +1960,18 @@ class IHydra extends Hydra {
   */
   listConfig(serviceName) {
     return super._listConfig(serviceName);
+  }
+  
+  /**
+   * @name hasServicePresence
+   * @summary Indicate if a service has presence.
+   * @description Indicates if a service has presence, meaning the 
+   *              service is running in at least one node.
+   * @param {string} name - service name - note service name is case insensitive
+   * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
+   */
+  hasServicePresence(name) {
+    return super._hasServicePresence(name);
   }
 
   /**
