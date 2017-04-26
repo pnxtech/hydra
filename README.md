@@ -6,7 +6,9 @@ Hydra is a NodeJS package which facilitates building distributed applications su
 
 Hydra offers features such as service discovery, distributed messaging, message load balancing, logging, presence, and health monitoring. It was announced at [EmpireNode 2016](http://empirenode.org/).
 
-[See our quick start guide](https://www.hydramicroservice.com/docs/quick-start/)
+Install the latest stable version via `npm install hydra --save`
+
+[See our quick start guide](https://www.hydramicroservice.com/docs/quick-start/) and [sample projects](https://www.hydramicroservice.com/resources/#resources)
 
 If you're just getting started with Node Microservices and you have ExpressJS experience you should first look at our [HydraExpress](https://github.com/flywheelsports/hydra-express) project.
 
@@ -35,6 +37,12 @@ There are many projects on NPM which contain the name `hydra`. The following are
 * [Hydra-plugin-rpc](https://www.npmjs.com/package/hydra-plugin-rpc): Create and consume remote procedure calls in hydra with ease
 * [Hydra-Cluster](https://github.com/cjus/hydra-cluster): A compute cluster based on Hydra
 * [UMF](https://github.com/cjus/umf): Universal Message Format, a messaging specification for routable messages
+
+### Examples
+
+* [A sample hello-service project](https://github.com/cjus/hello-service)
+* [Hydra Hot Potato Service - an example of distributed messaging](https://github.com/cjus/hpp-service)
+* [Hydra Message Relay - processing WebSocket calls via HydraRouter](https://github.com/cjus/hydra-message-relay)
 
 ### Articles
 
