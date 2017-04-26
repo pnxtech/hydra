@@ -170,9 +170,8 @@ class Hydra extends EventEmitter {
           reject(new Error('No Redis connection'));
           return;
         }
-        // return this._parseServicePortConfig(this.config.servicePort).then((port) => {
-          this.config.servicePort = this.config.servicePort || this._getRandomServicePort();
-          // this.config.servicePort = port;
+        return this._parseServicePortConfig(this.config.servicePort).then((port) => {
+          this.config.servicePort = port;
           this.serviceName = config.serviceName;
           if (this.serviceName && this.serviceName.length > 0) {
             this.serviceName = this.serviceName.toLowerCase();
@@ -199,7 +198,7 @@ class Hydra extends EventEmitter {
             ready();
           }
           return 0;
-        // }).catch((err) => reject(err));
+        }).catch((err) => reject(err));
       }).catch((err) => reject(err));
     });
   }
@@ -1488,32 +1487,26 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getRandomServicePort
-   * @summary Retrieves a random TCP/IP port.
-   * @return {number} port - new random socket port
-   */
-  _getRandomServicePort() {
-    const maxSocketPort = 65535;
-    const nonPriviliagePortBountry = 1024;
-    return parseInt(nonPriviliagePortBountry + (new Date().getTime() % (Math.random() * (maxSocketPort - nonPriviliagePortBountry))));
-  }
-
-  /**
    * @name _parseServicePortConfig
    * @summary Parse and process given port data in config
    * @param {mixed} port - configured port
    * @return {promise} promise - resolving with unassigned port, rejecting when no free port is found
    */
   _parseServicePortConfig(port) {
-    // No port given, get unassigned port from standard ranges
-    if (typeof port === 'undefined' || !port || port == 0) {
-      port = '1024-65535';
-    }
     return new Promise((resolve, reject) => {
+      // No port given, get unassigned port from standard ranges
+      if (typeof port === 'undefined' || !port || port == 0) {
+        port = '1024-65535';
+      }
+      //Specific port given, skip free port check
+      else if (! /-|,/.test(port.toString())) {
+        resolve(port.toString());
+        return;
+      }
       let portRanges = port.toString().split(',')
         .map((p) => {
           p = p.trim();
-          const ipRe = '(102[4-9]|10[3-9]\\d|1[1-9]\\d{2}|[2-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])';
+          const ipRe = '(?:6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{1,3}|[1-9])';
           let matches = p.match(new RegExp(`^${ipRe}-${ipRe}$`, 'g'));
           if (matches !== null) {
             return p;
