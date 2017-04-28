@@ -1046,13 +1046,13 @@ class Hydra extends EventEmitter {
             instance = Utils.safeJSONParse(result);
             let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
             let options = {
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Accept-Charset': 'utf-8'
-              },
               method: parsedRoute.httpMethod
             };
+            options.headers = Object.assign({
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Accept-Charset': 'utf-8'
+            }, umfmsg.headers);
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
@@ -1136,13 +1136,14 @@ class Hydra extends EventEmitter {
       if (parsedRoute.serviceName.indexOf('http') === 0) {
         let url = `${parsedRoute.serviceName}${parsedRoute.apiRoute}`;
         let options = {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Charset': 'utf-8'
-          },
           method: parsedRoute.httpMethod
         };
+        options.headers = Object.assign({
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Charset': 'utf-8'
+        }, umfmsg.headers);
+
         if (umfmsg.authorization) {
           options.headers.Authorization = umfmsg.authorization;
         }
@@ -1389,11 +1390,11 @@ class Hydra extends EventEmitter {
       });
     });
   }
-  
+
   /**
    * @name _hasServicePresence
    * @summary Indicate if a service has presence.
-   * @description Indicates if a service has presence, meaning the 
+   * @description Indicates if a service has presence, meaning the
    *              service is running in at least one node.
    * @param {string} name - service name - note service name is case insensitive
    * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
@@ -1402,9 +1403,10 @@ class Hydra extends EventEmitter {
     name = name || this._getServiceName();
     return new Promise((resolve, reject) => {
       this._getKeys(`*:${name}:*:presence`)
-        .then(instances => {
+        .then((instances) => {
           resolve(instances.length !== 0);
-        }).catch(reject);
+        })
+        .catch(reject);
     });
   }
 
@@ -1485,6 +1487,25 @@ class Hydra extends EventEmitter {
     return this.redisdb.duplicate();
   }
 
+  /**
+  * @name _getUMFMessage
+  * @summary returns UMF object helper
+  * @return {object} helper - UMF helper
+  */
+  _getUMFMessage() {
+    return require('./lib/umfmessage');
+  }
+
+  /**
+  * @name _getServerResponse
+  * @summary returns ServerResponse helper
+  * @return {object} helper - service response helper
+  */
+  _getServerResponse() {
+    return require('./lib/server-response');
+  }
+
+
   /** **************************************************************
    *  Hydra private utility functions.
    * ***************************************************************/
@@ -1516,7 +1537,8 @@ class Hydra extends EventEmitter {
       if (typeof port === 'undefined' || !port || port == 0) {
         port = '1024-65535';
       }
-      //Specific port given, skip free port check
+
+      // Specific port given, skip free port check
       else if (! /-|,/.test(port.toString())) {
         resolve(port.toString());
         return;
@@ -1954,11 +1976,11 @@ class IHydra extends Hydra {
   listConfig(serviceName) {
     return super._listConfig(serviceName);
   }
-  
+
   /**
    * @name hasServicePresence
    * @summary Indicate if a service has presence.
-   * @description Indicates if a service has presence, meaning the 
+   * @description Indicates if a service has presence, meaning the
    *              service is running in at least one node.
    * @param {string} name - service name - note service name is case insensitive
    * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
@@ -1974,6 +1996,24 @@ class IHydra extends Hydra {
   */
   getClonedRedisClient() {
     return super._getClonedRedisClient();
+  }
+
+  /**
+  * @name getUMFMessage
+  * @summary returns UMF object helper
+  * @return {object} helper - UMF helper
+  */
+  getUMFMessage() {
+    return super._getUMFMessage();
+  }
+
+  /**
+  * @name getServerResponse
+  * @summary returns ServerResponse helper
+  * @return {object} helper - service response helper
+  */
+  getServerResponse() {
+    return super._getServerResponse();
   }
 }
 
