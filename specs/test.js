@@ -324,7 +324,7 @@ describe('Hydra', function() {
                 done();
                 r.quit();
               });
-            }, SECOND * 3);
+            }, SECOND * 4);
           });
       });
   });

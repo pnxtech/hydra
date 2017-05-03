@@ -6,7 +6,6 @@ Promise.series = (iterable, action) => {
   );
 };
 
-const net = require('net');
 const EventEmitter = require('events');
 const util = require('util');
 const Route = require('route-parser');
@@ -22,9 +21,9 @@ let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
-const PRESENCE_UPDATE_INTERVAL = 500; // unit = milli-seconds, so every half second
+const PRESENCE_UPDATE_INTERVAL = 1000; // unit = milli-seconds, so every second
 const HEALTH_UPDATE_INTERVAL = 5000;
-const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL * 3);
+const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / 1000) * 3;
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 
 /**
@@ -85,12 +84,20 @@ class Hydra extends EventEmitter {
   /**
    * @name init
    * @summary Register plugins then continue initialization
-   * @param {object} config - configuration object containing hydra specific keys/values
+   * @param {mixed} config - a string with a path to a configuration file or an
+   *                         object containing hydra specific keys/values
    * @param {boolean} testMode - whether hydra is being started in unit test mode
    * @return {object} promise - resolves with this._init
    */
   init(config, testMode) {
     this.testMode = testMode;
+    if (typeof config === 'string') {
+      const configHelper = require('./lib/config');
+      return configHelper.init(config)
+        .then(() => {
+          return this.init(configHelper.getObject(), testMode);
+        });
+    }
     const initPromise = new Promise((resolve, reject) => {
       if (!config || !config.hydra) {
         reject(new Error('Config missing hydra branch'));
@@ -177,11 +184,12 @@ class Hydra extends EventEmitter {
             this.serviceName = this.serviceName.toLowerCase();
           }
           this.serviceDescription = this.config.serviceDescription || 'not specified';
-          this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
+          this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
           // if serviceIP field contains a name rather than a dotted IP address
           // then use DNS to resolve the name to an IP address.
           const dns = require('dns');
+          const net = require('net');
           if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
             dns.lookup(this.config.serviceIP, (err, result) => {
               this.config.serviceIP = result;
@@ -278,11 +286,6 @@ class Hydra extends EventEmitter {
             this._logMessage('error', `Redis error: ${err}`);
           });
         return client;
-      })
-      .catch((err) => {
-        let message = `Redis error: ${err.message}`;
-        this._logMessage('error', message);
-        throw err;
       });
   }
 
@@ -792,12 +795,15 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(err);
             } else {
-              let instanceList = result.map((instance) => {
-                let instanceObj = Utils.safeJSONParse(instance);
-                if (instanceObj) {
-                  instanceObj.updatedOnTS = (new Date(instanceObj.updatedOn).getTime());
+              let instanceList = [];
+              result.forEach((instance) => {
+                if (instance) {
+                  let instanceObj = Utils.safeJSONParse(instance);
+                  if (instanceObj) {
+                    instanceObj.updatedOnTS = (new Date(instanceObj.updatedOn).getTime());
+                  }
+                  instanceList.push(instanceObj);
                 }
-                return instanceObj;
               });
               resolve(instanceList);
             }
@@ -831,8 +837,8 @@ class Hydra extends EventEmitter {
             resolve(result);
           }
         })
-        .catch((_err) => {
-          reject(new Error(`Service instance for ${name} is unavailable`));
+        .catch((err) => {
+          reject(err);
         });
     });
   }
@@ -885,6 +891,15 @@ class Hydra extends EventEmitter {
    */
   _getInstanceID() {
     return this.instanceID;
+  }
+
+  /**
+   * @name _getInstanceVersion
+   * @summary Return the version of this instance
+   * @return {number} version - instance version
+   */
+  _getInstanceVersion() {
+    return this.serviceVersion;
   }
 
   /**
@@ -1064,23 +1079,39 @@ class Hydra extends EventEmitter {
             }
 
             let status = 0;
+            let ct;
+            let isJSON = false;
+            let headers = {};
             fetch(url, options)
               .then((res) => {
                 status = res.status;
-                let ct = res.headers.get('content-type');
+                res.headers.forEach((value, name) => {
+                  headers[name] = value;
+                });
+                ct = res.headers.get('content-type');
                 if (ct && ct.indexOf('json') > -1) {
+                  isJSON = true;
                   return res.json();
                 } else {
-                  return res.text();
+                  isJSON = false;
+                  return res.buffer();
                 }
               })
-              .then((json) => {
-                if (json.statusCode) {
-                  resolve(json);
+              .then((body) => {
+                if (body.statusCode) {
+                  resolve(body);
                 } else {
-                  let resObject = serverResponse.createResponseObject(status, {
-                    result: json
-                  });
+                  let resObject;
+                  if (isJSON) {
+                    resObject = serverResponse.createResponseObject(status, {
+                      result: body
+                    });
+                  } else {
+                    resObject = {
+                      headers,
+                      body
+                    };
+                  }
                   resolve(resObject);
                 }
               })
@@ -1129,52 +1160,6 @@ class Hydra extends EventEmitter {
 
       if (parsedRoute.apiRoute === '') {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, 'message `to` field does not specify a valid route'));
-        return;
-      }
-
-      // check if a non-service message (HTTP passthrough) is being sent and handle accordingly
-      if (parsedRoute.serviceName.indexOf('http') === 0) {
-        let url = `${parsedRoute.serviceName}${parsedRoute.apiRoute}`;
-        let options = {
-          method: parsedRoute.httpMethod
-        };
-        options.headers = Object.assign({
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Charset': 'utf-8'
-        }, umfmsg.headers);
-
-        if (umfmsg.authorization) {
-          options.headers.Authorization = umfmsg.authorization;
-        }
-        if (umfmsg.body) {
-          let httpMethod = parsedRoute.httpMethod.toUpperCase();
-          if (httpMethod === 'POST' || httpMethod === 'PUT') {
-            options.body = Utils.safeJSONStringify(umfmsg.body);
-          }
-        }
-        let status = 0;
-        fetch(url, options)
-          .then((res) => {
-            status = res.status;
-            let ct = res.headers.get('content-type');
-            if (ct && ct.indexOf('json') > -1) {
-              return res.json();
-            }
-          })
-          .then((json) => {
-            if (json.statusCode) {
-              resolve(json);
-            } else {
-              let resObject = serverResponse.createResponseObject(status, {
-                result: json
-              });
-              resolve(resObject);
-            }
-          })
-          .catch((err) => {
-            resolve(this._createServerResponseWithReason(status, err.message));
-          });
         return;
       }
 
@@ -1488,27 +1473,59 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getUMFMessage
+  * @name _getUMFMessageHelper
   * @summary returns UMF object helper
   * @return {object} helper - UMF helper
   */
-  _getUMFMessage() {
+  _getUMFMessageHelper() {
     return require('./lib/umfmessage');
   }
 
   /**
-  * @name _getServerResponse
+  * @name _getServerResponseHelper
   * @summary returns ServerResponse helper
   * @return {object} helper - service response helper
   */
-  _getServerResponse() {
+  _getServerResponseHelper() {
     return require('./lib/server-response');
   }
 
+  /**
+  * @name _getUtilsHelper
+  * @summary returns a utils helper
+  * @return {object} helper - utils helper
+  */
+  _getUtilsHelper() {
+    return require('./lib/utils');
+  }
+
+  /**
+  * @name _getConfigHelper
+  * @summary returns a config helper
+  * @return {object} helper - config helper
+  */
+  _getConfigHelper() {
+    return require('./lib/config');
+  }
 
   /** **************************************************************
    *  Hydra private utility functions.
    * ***************************************************************/
+
+   /**
+    * @name _createServerResponseWithReason
+    * @summary Create a server response using an HTTP code and reason
+    * @param {number} httpCode - code using ServerResponse.HTTP_XXX
+    * @param {string} reason - reason description
+    * @return {object} response - response object for use with promise resolve and reject calls
+    */
+  _createServerResponse(httpCode, reason) {
+    return serverResponse.createResponseObject(httpCode, {
+      result: {
+        reason: reason
+      }
+    });
+  }
 
   /**
    * @name _createServerResponseWithReason
@@ -1536,10 +1553,8 @@ class Hydra extends EventEmitter {
       // No port given, get unassigned port from standard ranges
       if (typeof port === 'undefined' || !port || port == 0) {
         port = '1024-65535';
-      }
-
-      // Specific port given, skip free port check
-      else if (! /-|,/.test(port.toString())) {
+      } else if (! /-|,/.test(port.toString())) {
+        // Specific port given, skip free port check
         resolve(port.toString());
         return;
       }
@@ -1661,8 +1676,7 @@ class Hydra extends EventEmitter {
     let version;
     try {
       const path = require('path');
-      const fs = require('fs');
-      let fpath = `${path.dirname(fs.realpathSync(__filename))}/package.json`;
+      let fpath = `${path.dirname(process.argv[1])}/package.json`;
       version = require(fpath).version;
     } catch (e) {
       version = 'unspecified';
@@ -1692,7 +1706,8 @@ class IHydra extends Hydra {
   /**
    * @name init
    * @summary Initialize Hydra with config object.
-   * @param {object} config - configuration object containing hydra specific keys/values
+   * @param {mixed} config - a string with a path to a configuration file or an
+   *                         object containing hydra specific keys/values
    * @param {boolean} testMode - whether hydra is being started in unit test mode
    * @return {object} promise - resolving if init success or rejecting otherwise
    */
@@ -1784,6 +1799,15 @@ class IHydra extends Hydra {
    */
   getInstanceID() {
     return super._getInstanceID();
+  }
+
+  /**
+   * @name getInstanceVersion
+   * @summary Return the version of this instance
+   * @return {number} version - instance version
+   */
+  getInstanceVersion() {
+    return super._getInstanceVersion();
   }
 
   /**
@@ -1999,21 +2023,39 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name getUMFMessage
+  * @name getUMFMessageHelper
   * @summary returns UMF object helper
   * @return {object} helper - UMF helper
   */
-  getUMFMessage() {
-    return super._getUMFMessage();
+  getUMFMessageHelper() {
+    return super._getUMFMessageHelper();
   }
 
   /**
-  * @name getServerResponse
+  * @name getServerResponseHelper
   * @summary returns ServerResponse helper
   * @return {object} helper - service response helper
   */
-  getServerResponse() {
-    return super._getServerResponse();
+  getServerResponseHelper() {
+    return super._getServerResponseHelper();
+  }
+
+  /**
+  * @name getUtilsHelper
+  * @summary returns a Utils helper
+  * @return {object} helper - utils helper
+  */
+  getUtilsHelper() {
+    return super._getUtilsHelper();
+  }
+
+  /**
+  * @name getConfigHelper
+  * @summary returns a config helper
+  * @return {object} helper - config helper
+  */
+  getConfigHelper() {
+    return super._getConfigHelper();
   }
 }
 
