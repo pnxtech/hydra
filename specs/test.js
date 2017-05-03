@@ -42,7 +42,7 @@ process.chdir('./specs');
 * @summary Hydra Test Suite
 */
 describe('Hydra', function() {
-  this.timeout(SECOND * 5);
+  this.timeout(SECOND * 10);
 
   beforeEach(() => {
     hydra = require('../index.js');
@@ -324,7 +324,7 @@ describe('Hydra', function() {
                 done();
                 r.quit();
               });
-            }, SECOND * 4);
+            }, SECOND * 5);
           });
       });
   });
