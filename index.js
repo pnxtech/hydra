@@ -1061,13 +1061,10 @@ class Hydra extends EventEmitter {
             instance = Utils.safeJSONParse(result);
             let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
             let options = {
-              method: parsedRoute.httpMethod
+              method: parsedRoute.httpMethod.toUpperCase(),
+              timeout: 0
             };
-            options.headers = Object.assign({
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Accept-Charset': 'utf-8'
-            }, umfmsg.headers);
+            options.headers = Object.assign({}, umfmsg.headers);
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
@@ -1163,7 +1160,6 @@ class Hydra extends EventEmitter {
         return;
       }
 
-      // handle service message
       this._getServicePresence(parsedRoute.serviceName)
         .then((instances) => {
           if (instances.length === 0) {
