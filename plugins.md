@@ -1,7 +1,6 @@
 # Hydra plugins
 
-Hydra's behavior can be extended through plugins.
-This allows different Hydra services to easily take advantage of shared features.
+Hydra's behavior and features can be extended through plugins, allowing different Hydra services or plugins to easily take advantage of shared functionalities.
 
 ## Overview
 
@@ -11,7 +10,7 @@ Plugins should be registered before Hydra is initialized via hydra.init.
 
 E.g.
 
-```
+```js
 const YourPlugin = require('./your-plugin');
 hydra.use(new YourPlugin());
 ```
@@ -61,14 +60,16 @@ $ cd pingpong-service
 
 ***Tip:** On OS X, you can copy this snippet and then `pbpaste > pong-plugin.js`*
 
-```javascript
+```js
 // whenever a 'ping' event is emitted, a 'pong' event is emitted after a user-defined delay
 const Promise = require('bluebird');
-const HydraPlugin = require('fwsp-hydra/plugin');
+const HydraPlugin = require('hydra/plugin');
+
 class PongPlugin extends HydraPlugin {
   constructor() {
     super('example'); // unique identifier for the plugin
   }
+  
   // called at the beginning of hydra.init
   // the parent class will locate the plugin config and set this.opts
   // can return a Promise or a value
@@ -82,6 +83,7 @@ class PongPlugin extends HydraPlugin {
       });
     })
   }
+  
   // called when the config for this plugin has changed (via HydraEvent.CONFIG_UPDATE_EVENT)
   // if you need access to the full service config, override updateConfig(serviceConfig)
   configChanged(opts) {
@@ -90,6 +92,7 @@ class PongPlugin extends HydraPlugin {
       console.log(`Random delay = ${this.opts.pongDelay}`);
     }
   }
+  
   // called after hydra has initialized but before hydra.init Promise resolves
   // can return a Promise or a value
   // this will delay by the port number in ms for demonstration of Promise
@@ -106,10 +109,11 @@ class PongPlugin extends HydraPlugin {
       });
   }
 }
+
 module.exports = PongPlugin;
 ```
 
-### 3. Update `hydra` section of config.json:
+### 3. Update `hydra` section of `config.json` to pass the plugin configuration:
 
 ```json
 {
@@ -124,7 +128,7 @@ module.exports = PongPlugin;
 ```
 
 ### 4. Set up hydra service entry-point script:
-```javascript
+```js
 const version = require('./package.json').version;
 const hydra = require('fwsp-hydra');
 
@@ -164,3 +168,8 @@ config.init('./config/config.json')
 ### 5. Try it out!
 
 Run `npm start`.  After an initial delay, you should start seeing PING!s and PONG!s.
+
+### 6. Learn more from others:
+You may want to also learn from the implementation of the following hydra plugins as a reference:
+* [hydra-plugin-http](https://github.com/jkyberneees/hydra-plugin-http): Hydra plugin that adds traditional HTTP requests, routing and proxy capabilities to your hydra micro-services.
+* [hydra-plugin-rpc](https://github.com/ecwyne/hydra-plugin-rpc): Hydra-RPC Plugin for Hydra microservices library https://www.hydramicroservice.com
