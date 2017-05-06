@@ -1,6 +1,6 @@
 {
   "name": "hydra",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "license": "MIT",
   "author": "Carlos Justiniano",
   "contributors": [
@@ -32,8 +32,6 @@
   "dependencies": {
     "bluebird": "3.5.0",
     "ip": "1.1.5",
-    "json-stringify-safe": "5.0.1",
-    "node-fetch": "1.6.3",
     "redis": "2.7.1",
     "redis-url": "1.2.1",
     "route-parser": "0.0.5",
