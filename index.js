@@ -9,13 +9,14 @@ Promise.series = (iterable, action) => {
 const EventEmitter = require('events');
 const util = require('util');
 const Route = require('route-parser');
-const fetch = require('node-fetch');
 
 const Utils = require('./lib/utils');
 const UMFMessage = require('./lib/umfmessage');
 const RedisConnection = require('./lib/redis-connection');
 const ServerResponse = require('./lib/server-response');
 let serverResponse = new ServerResponse();
+const ServerRequest = require('./lib/server-request');
+let serverRequest = new ServerRequest();
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
@@ -1059,60 +1060,23 @@ class Hydra extends EventEmitter {
             reject(err);
           } else {
             instance = Utils.safeJSONParse(result);
-            let url = `http://${instance.ip}:${instance.port}${parsedRoute.apiRoute}`;
             let options = {
-              method: parsedRoute.httpMethod.toUpperCase(),
-              timeout: 0
+              host: instance.ip,
+              port: instance.port,
+              path: parsedRoute.apiRoute,
+              method: parsedRoute.httpMethod.toUpperCase()
             };
             options.headers = Object.assign({}, umfmsg.headers);
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
-            if (umfmsg.body) {
-              let httpMethod = parsedRoute.httpMethod.toUpperCase();
-              if (httpMethod === 'POST' || httpMethod === 'PUT') {
-                options.body = Utils.safeJSONStringify(umfmsg.body);
-              }
-            }
-
-            let status = 0;
-            let ct;
-            let isJSON = false;
-            let headers = {};
-            fetch(url, options)
+            options.body = Utils.safeJSONStringify(umfmsg.body);
+            serverRequest.send(options)
               .then((res) => {
-                status = res.status;
-                res.headers.forEach((value, name) => {
-                  headers[name] = value;
-                });
-                ct = res.headers.get('content-type');
-                if (ct && ct.indexOf('json') > -1) {
-                  isJSON = true;
-                  return res.json();
-                } else {
-                  isJSON = false;
-                  return res.buffer();
-                }
-              })
-              .then((body) => {
-                if (body.statusCode) {
-                  resolve(body);
-                } else {
-                  let resObject;
-                  if (isJSON) {
-                    resObject = serverResponse.createResponseObject(status, {
-                      result: body
-                    });
-                  } else {
-                    resObject = {
-                      headers,
-                      body
-                    };
-                  }
-                  resolve(resObject);
-                }
+                resolve(serverResponse.createResponseObject(res.statusCode, res));
               })
               .catch((_err) => {
+                this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
                 instanceList.shift();
                 if (instanceList.length === 0) {
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
@@ -1507,21 +1471,6 @@ class Hydra extends EventEmitter {
   /** **************************************************************
    *  Hydra private utility functions.
    * ***************************************************************/
-
-   /**
-    * @name _createServerResponseWithReason
-    * @summary Create a server response using an HTTP code and reason
-    * @param {number} httpCode - code using ServerResponse.HTTP_XXX
-    * @param {string} reason - reason description
-    * @return {object} response - response object for use with promise resolve and reject calls
-    */
-  _createServerResponse(httpCode, reason) {
-    return serverResponse.createResponseObject(httpCode, {
-      result: {
-        reason: reason
-      }
-    });
-  }
 
   /**
    * @name _createServerResponseWithReason
