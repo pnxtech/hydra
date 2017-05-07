@@ -317,7 +317,9 @@ class Hydra extends EventEmitter {
    */
   _getServiceName() {
     if (!this.initialized) {
-      throw new Error('init() not called, Hydra requires a configuration object.');
+      let msg = 'init() not called, Hydra requires a configuration object.';
+      this._logMessage('error', msg);
+      throw new Error(msg);
     }
     return this.serviceName;
   }
@@ -342,12 +344,16 @@ class Hydra extends EventEmitter {
   _registerService() {
     return new Promise((resolve, reject) => {
       if (!this.initialized) {
-        reject(new Error('init() not called, Hydra requires a configuration object.'));
+        let msg = 'init() not called, Hydra requires a configuration object.';
+        this._logMessage('error', msg);
+        reject(new Error(msg));
         return;
       }
 
       if (!this.redisdb) {
-        reject(new Error('No Redis connection'));
+        let msg = 'No Redis connection';
+        this._logMessage('error', msg);
+        reject(new Error(msg));
         return;
       }
       this.isService = true;
@@ -360,7 +366,9 @@ class Hydra extends EventEmitter {
       });
       this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, _result) => {
         if (err) {
-          reject(new Error('Unable to set :service key in redis db.'));
+          let msg = 'Unable to set :service key in redis db.';
+          this._logMessage('error', msg);
+          reject(new Error(msg));
         } else {
           let testRedis;
           if (this.testMode) {
@@ -493,7 +501,9 @@ class Hydra extends EventEmitter {
   _getAllServiceRoutes() {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
-        reject(new Error('No Redis connection'));
+        let msg = 'No Redis connection';
+        this._logMessage('error', msg);
+        reject(new Error(msg));
         return;
       }
       let promises = [];
@@ -828,7 +838,9 @@ class Hydra extends EventEmitter {
       return this._checkServicePresence(name)
         .then((result) => {
           if (result === null) {
-            reject(new Error(`Service instance for ${name} is unavailable`));
+            let msg = `Service instance for ${name} is unavailable`;
+            this._logMessage('error', msg);
+            reject(new Error(msg));
           } else {
             if (result.length > 1) {
               result.sort((a, b) => {
@@ -1053,6 +1065,7 @@ class Hydra extends EventEmitter {
 
     this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, _result) => {
       if (err) {
+        this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
         reject(err);
       } else {
         this.redisdb.hget(`${redisPreKey}:nodes`, instance.instanceID, (err, result) => {
@@ -1127,6 +1140,7 @@ class Hydra extends EventEmitter {
       this._getServicePresence(parsedRoute.serviceName)
         .then((instances) => {
           if (instances.length === 0) {
+            this.emit('metric', `service:unavailable|${parsedRoute.serviceName}`);
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
             return;
           }
@@ -1178,7 +1192,9 @@ class Hydra extends EventEmitter {
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
-            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${serviceName} instances`));
+            let msg = `Unavailable ${serviceName} instances`;
+            this._logMessage('error', msg);
+            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
             return;
           }
           if (instance && instance !== '') {
@@ -1190,7 +1206,9 @@ class Hydra extends EventEmitter {
           resolve();
         })
         .catch((err) => {
-          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+          let msg = err.message;
+          this._logMessage('error', msg);
+          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, msg));
         });
     });
   }
@@ -1239,14 +1257,18 @@ class Hydra extends EventEmitter {
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
-            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${serviceName} instances`));
+            let msg = `Unavailable ${serviceName} instances`;
+            this._logMessage('error', msg);
+            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
             return;
           }
           this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}`, message);
           resolve();
         })
         .catch((err) => {
-          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+          let msg = err.message;
+          this._logMessage('error', msg);
+          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, msg));
         });
     });
   }
@@ -1365,11 +1387,15 @@ class Hydra extends EventEmitter {
     return new Promise((resolve, reject) => {
       let parts = label.split(':');
       if (parts.length !== 2) {
-        reject(new Error('label not in this form: myservice:0.1.1.'));
+        let msg = 'label not in this form: myservice:0.1.1.';
+        this._logMessage('error', msg);
+        reject(new Error(msg));
       }
       this.redisdb.hget(`${redisPreKey}:${parts[0]}:configs`, parts[1], (err, result) => {
         if (err) {
-          reject(new Error('Unable to set :configs key in redis db.'));
+          let msg = 'Unable to set :configs key in redis db.';
+          this._logMessage('error', msg);
+          reject(new Error(msg));
         } else {
           resolve(Utils.safeJSONParse(result));
         }
@@ -1388,7 +1414,9 @@ class Hydra extends EventEmitter {
     return new Promise((resolve, reject) => {
       let parts = label.split(':');
       if (parts.length !== 2) {
-        reject(new Error('label not in this form: myservice:0.1.1.'));
+        let msg = 'label not in this form: myservice:0.1.1.';
+        this._logMessage('error', msg);
+        reject(new Error(msg));
       }
       this.redisdb.hset(`${redisPreKey}:${parts[0]}:configs`, `${parts[1]}`, Utils.safeJSONStringify(config), (err, _result) => {
         if (err) {
@@ -1410,7 +1438,9 @@ class Hydra extends EventEmitter {
     return new Promise((resolve, reject) => {
       this.redisdb.hkeys(`${redisPreKey}:${serviceName}:configs`, (err, result) => {
         if (err) {
-          reject(new Error('Unable to retrieve :config keys from redis db.'));
+          let msg = 'Unable to retrieve :config keys from redis db.';
+          this._logMessage('error', msg);
+          reject(new Error(msg));
         } else {
           if (result) {
             result.sort();
@@ -1521,7 +1551,9 @@ class Hydra extends EventEmitter {
         .filter((p) => p != null);
       let receivedCallBacks = 0;
       if (portRanges.length == 0) {
-        reject('servicePort configuration does not contain valid port(s)');
+        let msg = 'servicePort configuration does not contain valid port(s)';
+        this._logMessage('error', msg);
+        reject(msg);
         return;
       }
       portRanges.forEach((rangeToCheck, _index) => {
@@ -1542,7 +1574,9 @@ class Hydra extends EventEmitter {
             return;
           } else {
             if (receivedCallBacks === portRanges.length) {
-              reject('No available service port in given port range found');
+              let msg = 'No available service port in given port range found';
+              this._logMessage('error', msg);
+              reject(msg);
             }
           }
         });
