@@ -1086,6 +1086,10 @@ class Hydra extends EventEmitter {
             options.body = Utils.safeJSONStringify(umfmsg.body);
             serverRequest.send(options)
               .then((res) => {
+                if (res.payLoad && res.headers['content-type'].indexOf('json') > -1) {
+                  res = Object.assign(res, Utils.safeJSONParse(res.payLoad.toString('utf8')));
+                  delete res.payLoad;
+                }
                 resolve(serverResponse.createResponseObject(res.statusCode, res));
               })
               .catch((_err) => {
