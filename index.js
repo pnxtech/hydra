@@ -22,9 +22,10 @@ let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
-const PRESENCE_UPDATE_INTERVAL = 1000; // unit = milli-seconds, so every second
+const ONE_SECOND = 1000; // milliseconds
+const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
 const HEALTH_UPDATE_INTERVAL = 5000;
-const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / 1000) * 3;
+const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / ONE_SECOND) * 3;
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 
 /**
@@ -50,8 +51,6 @@ class Hydra extends EventEmitter {
     this.serviceDescription = '';
     this.serviceVersion = '';
     this.isService = false;
-    this.initialized = false;
-    this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
     this.redisdb = null;
     this._updatePresence = this._updatePresence.bind(this);
     this._updateHealthCheck = this._updateHealthCheck.bind(this);
@@ -59,6 +58,8 @@ class Hydra extends EventEmitter {
     this.registeredPlugins = [];
     this.presenceTimerInteval = null;
     this.healthTimerInterval = null;
+    this.initialized = false;
+    this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
   }
 
   /**
@@ -260,9 +261,9 @@ class Hydra extends EventEmitter {
 
   /**
    * @name _connectToRedis
-   * @summary Configure access to redis and monitor emitted events.
+   * @summary Configure access to Redis and monitor emitted events.
    * @private
-   * @param {object} config - redis client configuration
+   * @param {object} config - Redis client configuration
    * @return {object} promise - resolves or reject
    */
   _connectToRedis(config) {
@@ -275,7 +276,7 @@ class Hydra extends EventEmitter {
         this.redisdb = client;
         client
           .on('reconnecting', () => {
-            this._logMessage('error', 'Reconnecting to redis server...');
+            this._logMessage('error', 'Reconnecting to Redis server...');
           })
           .on('warning', (warning) => {
             this._logMessage('error', `Redis warning: ${warning}`);
@@ -292,7 +293,7 @@ class Hydra extends EventEmitter {
 
   /**
    * @name _getKeys
-   * @summary Retrieves a list of redis keys based on pattern.
+   * @summary Retrieves a list of Redis keys based on pattern.
    * @param {string} pattern - pattern to filter with
    * @return {object} promise - promise resolving to array of keys or or empty array
    */
@@ -366,7 +367,7 @@ class Hydra extends EventEmitter {
       });
       this.redisdb.set(`${redisPreKey}:${serviceName}:service`, serviceEntry, (err, _result) => {
         if (err) {
-          let msg = 'Unable to set :service key in redis db.';
+          let msg = 'Unable to set :service key in Redis db.';
           this._logMessage('error', msg);
           reject(new Error(msg));
         } else {
@@ -473,7 +474,7 @@ class Hydra extends EventEmitter {
   /**
    * @name _getRoutes
    * @summary Retrieves a array list of routes
-   * @param {string} serviceName - name of service to retreieve list of routes.
+   * @param {string} serviceName - name of service to retrieve list of routes.
    *                 If param is undefined, then the current serviceName is used.
    * @return {object} Promise - resolving to array of routes or rejection
    */
@@ -599,7 +600,7 @@ class Hydra extends EventEmitter {
 
   /**
    * @name _updateHealthCheck
-   * @summary Update service helath.
+   * @summary Update service heath.
    * @private
    * @return {undefined}
    */
@@ -670,7 +671,7 @@ class Hydra extends EventEmitter {
 
     let entry = Utils.safeJSONStringify(errMessage);
     if (entry) {
-      // If issue is with redis we can't use redis to log this error.
+      // If issue is with Redis we can't use Redis to log this error.
       // however the above call to the application logger would be one way of detecting the issue.
       if (this.isService) {
         if (message.toLowerCase().indexOf('redis') === -1) {
@@ -740,7 +741,7 @@ class Hydra extends EventEmitter {
           if (data) {
             Object.keys(data).forEach((entry) => {
               let item = Utils.safeJSONParse(data[entry]);
-              item.elapsed = parseInt((now - (new Date(item.updatedOn)).getTime()) / 1000);
+              item.elapsed = parseInt((now - (new Date(item.updatedOn)).getTime()) / ONE_SECOND);
               nodes.push(item);
             });
           }
@@ -964,7 +965,7 @@ class Hydra extends EventEmitter {
    * @name _getServiceHealthAll
    * @summary Retrieve the health status of all instance services.
    * @private
-   * @return {promise} promise - resolves with an array of objects containint instance health information.
+   * @return {promise} promise - resolves with an array of objects containing instance health information.
    */
   _getServiceHealthAll() {
     return new Promise((resolve, reject) => {
@@ -1163,7 +1164,7 @@ class Hydra extends EventEmitter {
 
   /**
    * @name _sendMessageThroughChannel
-   * @summary Sends a message to a redis pubsub channel
+   * @summary Sends a message to a Redis pubsub channel
    * @param {string} channel - channel name
    * @param {object} message - UMF formatted message object
    * @return {undefined}
@@ -1401,7 +1402,7 @@ class Hydra extends EventEmitter {
       }
       this.redisdb.hget(`${redisPreKey}:${parts[0]}:configs`, parts[1], (err, result) => {
         if (err) {
-          let msg = 'Unable to set :configs key in redis db.';
+          let msg = 'Unable to set :configs key in Redis db.';
           this._logMessage('error', msg);
           reject(new Error(msg));
         } else {
@@ -1428,7 +1429,7 @@ class Hydra extends EventEmitter {
       }
       this.redisdb.hset(`${redisPreKey}:${parts[0]}:configs`, `${parts[1]}`, Utils.safeJSONStringify(config), (err, _result) => {
         if (err) {
-          reject(new Error('Unable to set :configs key in redis db.'));
+          reject(new Error('Unable to set :configs key in Redis db.'));
         } else {
           resolve();
         }
@@ -1446,7 +1447,7 @@ class Hydra extends EventEmitter {
     return new Promise((resolve, reject) => {
       this.redisdb.hkeys(`${redisPreKey}:${serviceName}:configs`, (err, result) => {
         if (err) {
-          let msg = 'Unable to retrieve :config keys from redis db.';
+          let msg = 'Unable to retrieve :config keys from Redis db.';
           this._logMessage('error', msg);
           reject(new Error(msg));
         } else {
@@ -1463,7 +1464,7 @@ class Hydra extends EventEmitter {
 
   /**
   * @name _getClonedRedisClient
-  * @summary get a redis client connection which points to the same Redis server that hydra is using
+  * @summary get a Redis client connection which points to the same Redis server that hydra is using
   * @return {object} - Redis Client
   */
   _getClonedRedisClient() {
@@ -1582,7 +1583,7 @@ class Hydra extends EventEmitter {
             return;
           } else {
             if (receivedCallBacks === portRanges.length) {
-              let msg = 'No available service port in given port range found';
+              let msg = 'No available service port in provided port range';
               this._logMessage('error', msg);
               reject(msg);
             }
@@ -1656,7 +1657,7 @@ class Hydra extends EventEmitter {
 
   /**
   * @name _getParentPackageJSONVersion
-  * @summary Retreieve the vesion from the host app's package.json file.
+  * @summary Retrieve the version from the host app's package.json file.
   * @return {string} version - package version
   */
   _getParentPackageJSONVersion() {
@@ -1678,7 +1679,7 @@ class Hydra extends EventEmitter {
 
 /**
  * @name IHydra
- * @summary Interface to Hydra, can provide microservice funtionality or be used to monitor microservices.
+ * @summary Interface to Hydra, can provide microservice functionality or be used to monitor microservices.
  * @fires Hydra#log
  * @fires Hydra#message
  */
@@ -1826,7 +1827,7 @@ class IHydra extends Hydra {
   /**
    * @name getServiceHealthAll
    * @summary Retrieve the health status of all instance services.
-   * @return {promise} promise - resolves with an array of objects containint instance health information.
+   * @return {promise} promise - resolves with an array of objects containing instance health information.
    */
   getServiceHealthAll() {
     return super._getServiceHealthAll();
@@ -2002,7 +2003,7 @@ class IHydra extends Hydra {
 
   /**
   * @name getClonedRedisClient
-  * @summary get a redis client connection which points to the same Redis server that hydra is using
+  * @summary get a Redis client connection which points to the same Redis server that hydra is using
   * @return {object} - Redis Client
   */
   getClonedRedisClient() {
