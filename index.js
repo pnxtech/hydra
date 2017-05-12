@@ -674,7 +674,7 @@ class Hydra extends EventEmitter {
       // If issue is with Redis we can't use Redis to log this error.
       // however the above call to the application logger would be one way of detecting the issue.
       if (this.isService) {
-        if (message.toLowerCase().indexOf('redis') === -1) {
+        if (entry.toLowerCase().indexOf('redis') === -1) {
           let key = `${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`;
           this.redisdb.multi()
             .select(HYDRA_REDIS_DB)
