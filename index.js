@@ -1412,11 +1412,16 @@ class Hydra extends EventEmitter {
     });
   }
 
-  _reconfigure(label, config) {
+  /**
+   * @name _reconfigure
+   * @summary Sends a message to all present instances of a hydra service about the config changes
+   * @param {any} label in the format of 'my_service:1.0.0'
+   * @return {promise} Promise from sendBroadcastMessage
+   * 
+   * @memberof Hydra
+   */
+  _reconfigure(label) {
     let parts = label.split(':');
-    if (parts.length !== 2) {
-      reject(new Error('label not in this form: myservice:0.1.1.'));
-    }
 
     return this._sendBroadcastMessage(UMFMessage.createMessage({
       to: `${parts[0]}:/`,
@@ -1448,7 +1453,7 @@ class Hydra extends EventEmitter {
         if (err) {
           reject(new Error('Unable to set :configs key in Redis db.'));
         } else {
-          this._reconfigure(label, config);
+          this._reconfigure(label);
           resolve();
         }
       });
