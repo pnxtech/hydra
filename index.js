@@ -1417,7 +1417,6 @@ class Hydra extends EventEmitter {
    * @summary Sends a message to all present instances of a hydra service about the config changes
    * @param {any} label in the format of 'my_service:1.0.0'
    * @return {promise} Promise from sendBroadcastMessage
-   * 
    * @memberof Hydra
    */
   _reconfigure(label) {
