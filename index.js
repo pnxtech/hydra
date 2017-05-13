@@ -1424,9 +1424,9 @@ class Hydra extends EventEmitter {
 
     return this._sendBroadcastMessage(UMFMessage.createMessage({
       to: `${parts[0]}:/`,
-      from: `${this.serviceName}:/`,
+      frm: `${this.serviceName}:/`,
       typ: 'reconfigure',
-      body: {
+      bdy: {
         action: 'reconfigure',
         label: label
       }
