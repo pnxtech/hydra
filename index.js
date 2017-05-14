@@ -1266,9 +1266,13 @@ class Hydra extends EventEmitter {
       this._getServicePresence(serviceName)
         .then((instances) => {
           if (instances.length === 0) {
-            let msg = `Unavailable ${serviceName} instances`;
-            this._logMessage('error', msg);
-            resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
+            if (serviceName !== 'hydra-router') {
+              let msg = `Unavailable ${serviceName} instances`;
+              this._logMessage('error', msg);
+              resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
+            } else {
+              resolve();
+            }
             return;
           }
           this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}`, message);
