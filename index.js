@@ -113,6 +113,10 @@ class Hydra extends EventEmitter {
         reject(new Error('Config missing serviceName or servicePort'));
         return;
       }
+      if (config.hydra.serviceName.includes(':')) {
+        reject(new Error('Config can not have a colon character in its name'));
+        return;
+      }
       let loader = (newConfig) => {
         return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
           .then((..._results) => {
