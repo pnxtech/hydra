@@ -1093,6 +1093,9 @@ class Hydra extends EventEmitter {
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
+            if (umfmsg.timeout) {
+              options.timeout = umfmsg.timeout;
+            }
             options.body = Utils.safeJSONStringify(umfmsg.body);
             serverRequest.send(Object.assign(options, sendOpts))
               .then((res) => {
