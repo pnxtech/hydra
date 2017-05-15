@@ -1048,9 +1048,10 @@ class Hydra extends EventEmitter {
    * @param {object} umfmsg - UMF message
    * @param {function} resolve - promise resolve function
    * @param {function} reject - promise reject function
+   * @param {object} sendOpts - serverResponse.send options
    * @return {undefined}
    */
-  _tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject) {
+  _tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject, sendOpts) {
     let instance;
 
     if (parsedRoute) {
@@ -1089,7 +1090,7 @@ class Hydra extends EventEmitter {
               options.headers.Authorization = umfmsg.authorization;
             }
             options.body = Utils.safeJSONStringify(umfmsg.body);
-            serverRequest.send(options)
+            serverRequest.send(Object.assign(options, sendOpts))
               .then((res) => {
                 if (res.payLoad && res.headers['content-type'].indexOf('json') > -1) {
                   res = Object.assign(res, Utils.safeJSONParse(res.payLoad.toString('utf8')));
@@ -1103,7 +1104,7 @@ class Hydra extends EventEmitter {
                 if (instanceList.length === 0) {
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
-                  this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject);
+                  this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject, sendOpts);
                 }
               });
           }
@@ -1119,10 +1120,11 @@ class Hydra extends EventEmitter {
    *              message.body.fallbackToQueue value set to true, then the
    *              message will be sent to the services message queue.
    * @param {object} message - UMF formatted message
+   * @param {object} sendOpts - serverResponse.send options
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message) {
+  _makeAPIRequest(message, sendOpts={}) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1153,7 +1155,7 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
             return;
           }
-          this._tryAPIRequest(instances, parsedRoute, umfmsg, resolve, reject);
+          this._tryAPIRequest(instances, parsedRoute, umfmsg, resolve, reject, sendOpts);
           return 0;
         })
         .catch((err) => {
