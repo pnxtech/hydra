@@ -93,6 +93,7 @@ class Hydra extends EventEmitter {
    */
   init(config, testMode) {
     this.testMode = testMode;
+
     if (typeof config === 'string') {
       const configHelper = require('./lib/config');
       return configHelper.init(config)
@@ -100,23 +101,8 @@ class Hydra extends EventEmitter {
           return this.init(configHelper.getObject(), testMode);
         });
     }
+
     const initPromise = new Promise((resolve, reject) => {
-      if (!config || !config.hydra) {
-        reject(new Error('Config missing hydra branch'));
-        return;
-      }
-      if (!config.hydra.redis) {
-        reject(new Error('Config missing hydra.redis branch'));
-        return;
-      }
-      if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
-        reject(new Error('Config missing serviceName or servicePort'));
-        return;
-      }
-      if (config.hydra.serviceName.includes(':')) {
-        reject(new Error('Config can not have a colon character in its name'));
-        return;
-      }
       let loader = (newConfig) => {
         return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
           .then((..._results) => {
@@ -132,7 +118,64 @@ class Hydra extends EventEmitter {
           });
       };
 
-      if (process.env.HYDRA_REDIS_URL && process.env.HYDRA_SERVICE) {
+      if (!config || !config.hydra) {
+        config = Object.assign({
+          'hydra': {
+            'serviceIP': '',
+            'servicePort': 0,
+            'serviceType': '',
+            'serviceDescription': '',
+            'redis': {
+              'url': 'redis://127.0.0.1:6379/15'
+            }
+          }
+        });
+      }
+
+      if (!config.hydra.redis) {
+        config.hydra = Object.assign(config.hydra, {
+          'redis': {
+            'url': 'redis://127.0.0.1:6379/15'
+          }
+        });
+      }
+
+      if (process.env.HYDRA_REDIS_URL) {
+        Object.assign(config.hydra, {
+          redis: {
+            url: process.env.HYDRA_REDIS_URL
+          }
+        });
+      }
+
+      let partialConfig = true;
+      if (process.env.HYDRA_SERVICE) {
+        let hydraService = process.env.HYDRA_SERVICE;
+        if (hydraService.includes('|')) {
+          hydraService = hydraService.replace(/(\r\n|\r|\n)/g, '');
+          let newHydraBranch = {};
+          let key = '';
+          let val = '';
+          let segs = hydraService.split('|');
+          segs.forEach((segment) => {
+            segment = segment.trim();
+            [key, val] = segment.split('=');
+            newHydraBranch[key] = val;
+          });
+          Object.assign(config.hydra, newHydraBranch);
+          if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
+            reject(new Error('Config missing serviceName or servicePort'));
+            return;
+          }
+          if (config.hydra.serviceName.includes(':')) {
+            reject(new Error('Config can not have a colon character in its name'));
+            return;
+          }
+          partialConfig = false;
+        }
+      }
+
+      if (partialConfig) {
         this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
