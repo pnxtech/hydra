@@ -81,25 +81,42 @@ describe('Hydra', function() {
       })
       .catch((err) => {
         expect(err).to.not.be.null;
-        expect(err.message).to.equal('Config missing hydra branch');
+        expect(err.message).to.equal('Config missing serviceName or servicePort');
         done();
       });
   });
 
   /**
-  * @description Hydra should fail to load without a hydra.redis branch in configuration
+  * @description Hydra should load if serviceName and servicePort is provided
   */
-  it('should fail without config hydra.redis branch', (done) => {
+  it('should load if serviceName and servicePort is provided', (done) => {
+    hydra.init({
+      hydra: {
+        serviceName: 'test-service',
+        servicePort: 3000
+      }
+    }, true)
+      .then(() => {
+        done();
+      })
+      .catch((err) => {
+        expect(err).to.be.null;
+        done();
+      });
+  });
+
+  /**
+  * @description Hydra should load without a hydra.redis branch in configuration
+  */
+  it('should load without config hydra.redis branch', (done) => {
     let config = getConfig();
     delete config.hydra.redis;
     hydra.init(config, true)
       .then(() => {
-        expect(true).to.be.false;
         done();
       })
       .catch((err) => {
-        expect(err).to.not.be.null;
-        expect(err.message).to.equal('Config missing hydra.redis branch');
+        expect(err).to.be.null;
         done();
       });
   });

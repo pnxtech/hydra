@@ -163,19 +163,20 @@ class Hydra extends EventEmitter {
             newHydraBranch[key] = val;
           });
           Object.assign(config.hydra, newHydraBranch);
-          if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
-            reject(new Error('Config missing serviceName or servicePort'));
-            return;
-          }
-          if (config.hydra.serviceName.includes(':')) {
-            reject(new Error('Config can not have a colon character in its name'));
-            return;
-          }
           partialConfig = false;
         }
       }
 
-      if (partialConfig) {
+      if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
+        reject(new Error('Config missing serviceName or servicePort'));
+        return;
+      }
+      if (config.hydra.serviceName.includes(':')) {
+        reject(new Error('Config can not have a colon character in its name'));
+        return;
+      }
+
+      if (partialConfig && process.env.HYDRA_REDIS_URL) {
         this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
