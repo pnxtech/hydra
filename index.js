@@ -150,8 +150,12 @@ class Hydra extends EventEmitter {
 
       let partialConfig = true;
       if (process.env.HYDRA_SERVICE) {
-        let hydraService = process.env.HYDRA_SERVICE;
-        if (hydraService.includes('|')) {
+        let hydraService = process.env.HYDRA_SERVICE.trim();
+        if (hydraService[0] === '{') {
+          let newHydraBranch = Utils.safeJSONParse(hydraService);
+          Object.assign(config.hydra, newHydraBranch);
+          partialConfig = false;
+        } if (hydraService.includes('|')) {
           hydraService = hydraService.replace(/(\r\n|\r|\n)/g, '');
           let newHydraBranch = {};
           let key = '';
@@ -172,7 +176,11 @@ class Hydra extends EventEmitter {
         return;
       }
       if (config.hydra.serviceName.includes(':')) {
-        reject(new Error('Config can not have a colon character in its name'));
+        reject(new Error('serviceName can not have a colon character in its name'));
+        return;
+      }
+      if (config.hydra.serviceName.includes(' ')) {
+        reject(new Error('serviceName can not have a space character in its name'));
         return;
       }
 
