@@ -1123,11 +1123,12 @@ class Hydra extends EventEmitter {
 
     this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, _result) => {
       if (err) {
-        this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
+        this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|presence:not:found`);
         reject(err);
       } else {
         this.redisdb.hget(`${redisPreKey}:nodes`, instance.instanceID, (err, result) => {
           if (err) {
+            this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|instance:not:found`);
             reject(err);
           } else {
             instance = Utils.safeJSONParse(result);
@@ -1151,18 +1152,19 @@ class Hydra extends EventEmitter {
             options.body = Utils.safeJSONStringify(umfmsg.body);
             serverRequest.send(Object.assign(options, sendOpts))
               .then((res) => {
-                if (res.payLoad && res.headers['content-type'].indexOf('json') > -1) {
+                if (res.payLoad && res.headers['content-type'] && res.headers['content-type'].indexOf('json') > -1) {
                   res = Object.assign(res, Utils.safeJSONParse(res.payLoad.toString('utf8')));
                   delete res.payLoad;
                 }
                 resolve(serverResponse.createResponseObject(res.statusCode, res));
               })
-              .catch((_err) => {
-                this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
+              .catch((err) => {
                 instanceList.shift();
                 if (instanceList.length === 0) {
+                  this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|attempts:exhausted`);
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
+                  this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|${err.message}`);
                   this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject, sendOpts);
                 }
               });
@@ -1183,7 +1185,7 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message, sendOpts={}) {
+  _makeAPIRequest(message, sendOpts = { }) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1543,6 +1545,15 @@ class Hydra extends EventEmitter {
   */
   _getUMFMessageHelper() {
     return require('./lib/umfmessage');
+  }
+
+  /**
+  * @name _getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
+  _getServerRequestHelper() {
+    return require('./lib/server-request');
   }
 
   /**
@@ -2082,6 +2093,15 @@ class IHydra extends Hydra {
   */
   getUMFMessageHelper() {
     return super._getUMFMessageHelper();
+  }
+
+  /**
+  * @name getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
+  getServerRequestHelper() {
+    return super._getServerRequestHelper();
   }
 
   /**
