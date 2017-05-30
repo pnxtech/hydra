@@ -153,7 +153,6 @@ describe('Hydra', function() {
                 expect(err).to.be.null;
                 expect(data.length).to.equal(3);
                 expect(data).to.include('hydra:service:test-service:service');
-                expect(data).to.include('hydra:service:test-service:73909f8c96a9d08e876411c0a212a1f4:presence');
                 expect(data).to.include('hydra:service:nodes');
                 done();
               });
@@ -175,7 +174,6 @@ describe('Hydra', function() {
             expect(serviceInfo.serviceName).to.equal('test-service');
             expect(serviceInfo.serviceIP).to.equal('127.0.0.1');
             expect(serviceInfo.servicePort).to.equal('5000');
-            expect(hydra.getInstanceID()).to.equal('73909f8c96a9d08e876411c0a212a1f4');
             done();
           });
       });
