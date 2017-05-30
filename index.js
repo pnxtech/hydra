@@ -8,6 +8,7 @@ Promise.series = (iterable, action) => {
 
 const EventEmitter = require('events');
 const util = require('util');
+const uuid = require('uuid');
 const Route = require('route-parser');
 
 const Utils = require('./lib/utils');
@@ -93,6 +94,7 @@ class Hydra extends EventEmitter {
    */
   init(config, testMode) {
     this.testMode = testMode;
+
     if (typeof config === 'string') {
       const configHelper = require('./lib/config');
       return configHelper.init(config)
@@ -100,19 +102,8 @@ class Hydra extends EventEmitter {
           return this.init(configHelper.getObject(), testMode);
         });
     }
+
     const initPromise = new Promise((resolve, reject) => {
-      if (!config || !config.hydra) {
-        reject(new Error('Config missing hydra branch'));
-        return;
-      }
-      if (!config.hydra.redis) {
-        reject(new Error('Config missing hydra.redis branch'));
-        return;
-      }
-      if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
-        reject(new Error('Config missing serviceName or servicePort'));
-        return;
-      }
       let loader = (newConfig) => {
         return Promise.series(this.registeredPlugins, (plugin) => plugin.setConfig(newConfig.hydra))
           .then((..._results) => {
@@ -128,7 +119,73 @@ class Hydra extends EventEmitter {
           });
       };
 
-      if (process.env.HYDRA_REDIS_URL && process.env.HYDRA_SERVICE) {
+      if (!config || !config.hydra) {
+        config = Object.assign({
+          'hydra': {
+            'serviceIP': '',
+            'servicePort': 0,
+            'serviceType': '',
+            'serviceDescription': '',
+            'redis': {
+              'url': 'redis://127.0.0.1:6379/15'
+            }
+          }
+        });
+      }
+
+      if (!config.hydra.redis) {
+        config.hydra = Object.assign(config.hydra, {
+          'redis': {
+            'url': 'redis://127.0.0.1:6379/15'
+          }
+        });
+      }
+
+      if (process.env.HYDRA_REDIS_URL) {
+        Object.assign(config.hydra, {
+          redis: {
+            url: process.env.HYDRA_REDIS_URL
+          }
+        });
+      }
+
+      let partialConfig = true;
+      if (process.env.HYDRA_SERVICE) {
+        let hydraService = process.env.HYDRA_SERVICE.trim();
+        if (hydraService[0] === '{') {
+          let newHydraBranch = Utils.safeJSONParse(hydraService);
+          Object.assign(config.hydra, newHydraBranch);
+          partialConfig = false;
+        } if (hydraService.includes('|')) {
+          hydraService = hydraService.replace(/(\r\n|\r|\n)/g, '');
+          let newHydraBranch = {};
+          let key = '';
+          let val = '';
+          let segs = hydraService.split('|');
+          segs.forEach((segment) => {
+            segment = segment.trim();
+            [key, val] = segment.split('=');
+            newHydraBranch[key] = val;
+          });
+          Object.assign(config.hydra, newHydraBranch);
+          partialConfig = false;
+        }
+      }
+
+      if (!config.hydra.serviceName || (!config.hydra.servicePort && !config.hydra.servicePort === 0)) {
+        reject(new Error('Config missing serviceName or servicePort'));
+        return;
+      }
+      if (config.hydra.serviceName.includes(':')) {
+        reject(new Error('serviceName can not have a colon character in its name'));
+        return;
+      }
+      if (config.hydra.serviceName.includes(' ')) {
+        reject(new Error('serviceName can not have a space character in its name'));
+        return;
+      }
+
+      if (partialConfig && process.env.HYDRA_REDIS_URL) {
         this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
@@ -179,7 +236,9 @@ class Hydra extends EventEmitter {
           reject(new Error('No Redis connection'));
           return;
         }
-        return this._parseServicePortConfig(this.config.servicePort).then((port) => {
+
+        let p = this._parseServicePortConfig(this.config.servicePort);
+        p.then((port) => {
           this.config.servicePort = port;
           this.serviceName = config.serviceName;
           if (this.serviceName && this.serviceName.length > 0) {
@@ -188,27 +247,42 @@ class Hydra extends EventEmitter {
           this.serviceDescription = this.config.serviceDescription || 'not specified';
           this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
-          // if serviceIP field contains a name rather than a dotted IP address
-          // then use DNS to resolve the name to an IP address.
-          const dns = require('dns');
-          const net = require('net');
-          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-            dns.lookup(this.config.serviceIP, (err, result) => {
-              this.config.serviceIP = result;
-              this._updateInstanceData();
-              ready();
-            });
-          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-            let ip = require('ip');
-            this.config.serviceIP = ip.address();
+          /**
+          * Determine network DNS/IP for this service.
+          * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
+          * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
+          *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
+          * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
+          *   asking Hydra to determine the machine's IP address.
+          * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
+          *   or serviceDNS contains a valid DNS entry.
+          */
+          if (this.config.serviceDNS && this.config.serviceDNS !== '') {
+            this.config.serviceIP = this.config.serviceDNS;
             this._updateInstanceData();
             ready();
           } else {
-            this._updateInstanceData();
-            ready();
+            const net = require('net');
+            if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+              const dns = require('dns');
+              dns.lookup(this.config.serviceIP, (err, result) => {
+                this.config.serviceIP = result;
+                this._updateInstanceData();
+                ready();
+              });
+            } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+              let ip = require('ip');
+              this.config.serviceIP = ip.address();
+              this._updateInstanceData();
+              ready();
+            } else {
+              this._updateInstanceData();
+              ready();
+            }
           }
           return 0;
         }).catch((err) => reject(err));
+        return p;
       }).catch((err) => reject(err));
     });
   }
@@ -332,7 +406,9 @@ class Hydra extends EventEmitter {
    * @return {string} instance id
    */
   _serverInstanceID() {
-    return Utils.md5Hash(`${this.config.serviceIP}:${this.config.servicePort}`);
+    return uuid.
+      v4().
+      replace(RegExp('-', 'g'), '');
   }
 
   /**
@@ -844,9 +920,7 @@ class Hydra extends EventEmitter {
             reject(new Error(msg));
           } else {
             if (result.length > 1) {
-              result.sort((a, b) => {
-                return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0);
-              });
+              Utils.shuffeArray(result);
             }
             resolve(result);
           }
@@ -1067,11 +1141,12 @@ class Hydra extends EventEmitter {
 
     this.redisdb.get(`${redisPreKey}:${instance.serviceName}:${instance.instanceID}:presence`, (err, _result) => {
       if (err) {
-        this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
+        this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|presence:not:found`);
         reject(err);
       } else {
         this.redisdb.hget(`${redisPreKey}:nodes`, instance.instanceID, (err, result) => {
           if (err) {
+            this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|instance:not:found`);
             reject(err);
           } else {
             instance = Utils.safeJSONParse(result);
@@ -1089,21 +1164,25 @@ class Hydra extends EventEmitter {
             if (umfmsg.authorization) {
               options.headers.Authorization = umfmsg.authorization;
             }
+            if (umfmsg.timeout) {
+              options.timeout = umfmsg.timeout;
+            }
             options.body = Utils.safeJSONStringify(umfmsg.body);
             serverRequest.send(Object.assign(options, sendOpts))
               .then((res) => {
-                if (res.payLoad && res.headers['content-type'].indexOf('json') > -1) {
+                if (res.payLoad && res.headers['content-type'] && res.headers['content-type'].indexOf('json') > -1) {
                   res = Object.assign(res, Utils.safeJSONParse(res.payLoad.toString('utf8')));
                   delete res.payLoad;
                 }
                 resolve(serverResponse.createResponseObject(res.statusCode, res));
               })
-              .catch((_err) => {
-                this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}`);
+              .catch((err) => {
                 instanceList.shift();
                 if (instanceList.length === 0) {
+                  this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|attempts:exhausted`);
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
+                  this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|${err.message}`);
                   this._tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject, sendOpts);
                 }
               });
@@ -1124,7 +1203,7 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message, sendOpts={}) {
+  _makeAPIRequest(message, sendOpts = { }) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1484,6 +1563,15 @@ class Hydra extends EventEmitter {
   */
   _getUMFMessageHelper() {
     return require('./lib/umfmessage');
+  }
+
+  /**
+  * @name _getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
+  _getServerRequestHelper() {
+    return require('./lib/server-request');
   }
 
   /**
@@ -2023,6 +2111,15 @@ class IHydra extends Hydra {
   */
   getUMFMessageHelper() {
     return super._getUMFMessageHelper();
+  }
+
+  /**
+  * @name getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
+  getServerRequestHelper() {
+    return super._getServerRequestHelper();
   }
 
   /**
