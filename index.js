@@ -8,6 +8,7 @@ Promise.series = (iterable, action) => {
 
 const EventEmitter = require('events');
 const util = require('util');
+const uuid = require('uuid');
 const Route = require('route-parser');
 
 const Utils = require('./lib/utils');
@@ -235,7 +236,9 @@ class Hydra extends EventEmitter {
           reject(new Error('No Redis connection'));
           return;
         }
-        return this._parseServicePortConfig(this.config.servicePort).then((port) => {
+
+        let p = this._parseServicePortConfig(this.config.servicePort);
+        p.then((port) => {
           this.config.servicePort = port;
           this.serviceName = config.serviceName;
           if (this.serviceName && this.serviceName.length > 0) {
@@ -244,27 +247,42 @@ class Hydra extends EventEmitter {
           this.serviceDescription = this.config.serviceDescription || 'not specified';
           this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
-          // if serviceIP field contains a name rather than a dotted IP address
-          // then use DNS to resolve the name to an IP address.
-          const dns = require('dns');
-          const net = require('net');
-          if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-            dns.lookup(this.config.serviceIP, (err, result) => {
-              this.config.serviceIP = result;
-              this._updateInstanceData();
-              ready();
-            });
-          } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-            let ip = require('ip');
-            this.config.serviceIP = ip.address();
+          /**
+          * Determine network DNS/IP for this service.
+          * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
+          * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
+          *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
+          * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
+          *   asking Hydra to determine the machine's IP address.
+          * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
+          *   or serviceDNS contains a valid DNS entry.
+          */
+          if (this.config.serviceDNS && this.config.serviceDNS !== '') {
+            this.config.serviceIP = this.config.serviceDNS;
             this._updateInstanceData();
             ready();
           } else {
-            this._updateInstanceData();
-            ready();
+            const net = require('net');
+            if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
+              const dns = require('dns');
+              dns.lookup(this.config.serviceIP, (err, result) => {
+                this.config.serviceIP = result;
+                this._updateInstanceData();
+                ready();
+              });
+            } else if (!this.config.serviceIP || this.config.serviceIP === '') {
+              let ip = require('ip');
+              this.config.serviceIP = ip.address();
+              this._updateInstanceData();
+              ready();
+            } else {
+              this._updateInstanceData();
+              ready();
+            }
           }
           return 0;
         }).catch((err) => reject(err));
+        return p;
       }).catch((err) => reject(err));
     });
   }
@@ -388,7 +406,9 @@ class Hydra extends EventEmitter {
    * @return {string} instance id
    */
   _serverInstanceID() {
-    return Utils.md5Hash(`${this.config.serviceIP}:${this.config.servicePort}`);
+    return uuid.
+      v4().
+      replace(RegExp('-', 'g'), '');
   }
 
   /**
@@ -900,9 +920,7 @@ class Hydra extends EventEmitter {
             reject(new Error(msg));
           } else {
             if (result.length > 1) {
-              result.sort((a, b) => {
-                return (a.updatedOnTS < b.updatedOnTS) ? 1 : ((b.updatedOnTS < a.updatedOnTS) ? -1 : 0);
-              });
+              Utils.shuffeArray(result);
             }
             resolve(result);
           }

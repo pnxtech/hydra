@@ -1,16 +1,9 @@
 {
   "name": "hydra",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "license": "MIT",
   "author": "Carlos Justiniano",
-  "contributors": [
-    "Artem Kochnev <artemkochnev@gmail.com>",
-    "Carlos Justiniano <carlos.justiniano@gmail.com>",
-    "Eric Adum <eric.adum@gmail.com>",
-    "Jedediah Smith <jed@obdstudios.com>",
-    "Rolando Santamaria Maso <kyberneees@gmail.com>",
-    "Sebastiansch <s.schedlbauer@gmail.com>"
-  ],
+  "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
   "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
   "keywords": [
     "hydra",
