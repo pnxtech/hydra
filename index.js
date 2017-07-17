@@ -1,3 +1,5 @@
+const debug = require('debug')('hydra');
+
 const Promise = require('bluebird');
 Promise.series = (iterable, action) => {
   return Promise.mapSeries(
@@ -741,11 +743,13 @@ class Hydra extends EventEmitter {
       msg: message
     };
 
+    let entry = Utils.safeJSONStringify(errMessage);
+    debug(entry);
+
     if (!suppressEmit) {
       this.emit('log', errMessage);
     }
 
-    let entry = Utils.safeJSONStringify(errMessage);
     if (entry) {
       // If issue is with Redis we can't use Redis to log this error.
       // however the above call to the application logger would be one way of detecting the issue.

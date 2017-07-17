@@ -1,6 +1,6 @@
 {
   "name": "hydra",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "license": "MIT",
   "author": "Carlos Justiniano",
   "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "bluebird": "3.5.0",
+    "debug": "2.6.8",
     "ip": "1.1.5",
     "redis": "2.7.1",
     "redis-url": "1.2.1",
