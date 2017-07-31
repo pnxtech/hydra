@@ -62,6 +62,7 @@ class Hydra extends EventEmitter {
     this.presenceTimerInteval = null;
     this.healthTimerInterval = null;
     this.initialized = false;
+    this.hostName = os.hostname();
     this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
   }
 
@@ -663,7 +664,8 @@ class Hydra extends EventEmitter {
       updatedOn: this._getTimeStamp(),
       processID: process.pid,
       ip: this.config.serviceIP,
-      port: this.config.servicePort
+      port: this.config.servicePort,
+      hostName: this.hostName
     });
     if (entry) {
       this.redisdb.setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, KEY_EXPIRATION_TTL, this.instanceID);
@@ -713,7 +715,7 @@ class Hydra extends EventEmitter {
     return {
       serviceName: this.serviceName,
       instanceID: this.instanceID,
-      hostName: os.hostname(),
+      hostName: this.hostName,
       sampledOn: this._getTimeStamp(),
       processID: process.pid,
       architecture: process.arch,
