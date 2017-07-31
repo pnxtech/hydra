@@ -12,7 +12,7 @@ const EventEmitter = require('events');
 const util = require('util');
 const uuid = require('uuid');
 const Route = require('route-parser');
-
+const os = require('os');
 const Utils = require('./lib/utils');
 const UMFMessage = require('./lib/umfmessage');
 const RedisConnection = require('./lib/redis-connection');
@@ -713,6 +713,7 @@ class Hydra extends EventEmitter {
     return {
       serviceName: this.serviceName,
       instanceID: this.instanceID,
+      hostName: os.hostname(),
       sampledOn: this._getTimeStamp(),
       processID: process.pid,
       architecture: process.arch,
