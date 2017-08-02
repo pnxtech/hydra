@@ -313,11 +313,9 @@ class Hydra extends EventEmitter {
       if (!this.testMode) {
         this._logMessage('error', 'Service is shutting down.');
         if (this.mcMessageChannelClient) {
-          promises.push(this.mcMessageChannelClient.unsubscribeAsync());
           promises.push(this.mcMessageChannelClient.quitAsync());
         }
         if (this.mcDirectMessageChannelClient) {
-          promises.push(this.mcDirectMessageChannelClient.unsubscribeAsync());
           promises.push(this.mcDirectMessageChannelClient.quitAsync());
         }
       }
