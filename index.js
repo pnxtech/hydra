@@ -1898,6 +1898,16 @@ class IHydra extends Hydra {
   }
 
   /**
+   * @name getHealth
+   * @summary Retrieve service health info.
+   * @private
+   * @return {object} obj - object containing service health info
+   */
+  getHealth() {
+    return this._getHealth();
+  }
+
+  /**
    * @name sendToHealthLog
    * @summary Log a message to the service instance's health log queue.
    * @private
