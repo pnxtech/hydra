@@ -1,3 +1,5 @@
+'use strict';
+
 const debug = require('debug')('hydra');
 
 const Promise = require('bluebird');
@@ -274,8 +276,38 @@ class Hydra extends EventEmitter {
                 ready();
               });
             } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-              let ip = require('ip');
-              this.config.serviceIP = ip.address();
+              // handle IP selection
+              const os = require('os');
+              let interfaces = os.networkInterfaces();
+              if (this.config.serviceInterface && this.config.serviceInterface !== '') {
+                let segments = this.config.serviceInterface.split('/');
+                if (segments && segments.length === 2) {
+                  let interfaceName = segments[0];
+                  let interfaceMask = segments[1];
+                  Object.keys(interfaces).
+                    forEach((itf) => {
+                      interfaces[itf].forEach((interfaceRecord)=>{
+                        if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
+                          this.config.serviceIP = interfaceRecord.address;
+                        }
+                      });
+                    });
+                } else {
+                  throw new Error('config serviceInterface is not a valid format');
+                }
+              } else {
+                // not using serviceInterface - just select first eth0 entry.
+                let firstSelected = false;
+                Object.keys(interfaces).
+                  forEach((itf) => {
+                    interfaces[itf].forEach((interfaceRecord)=>{
+                      if (!firstSelected && itf === 'eth0') {
+                        this.config.serviceIP = interfaceRecord.address;
+                        firstSelected = true;
+                      }
+                    });
+                  });
+              }
               this._updateInstanceData();
               ready();
             } else {
