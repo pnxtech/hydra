@@ -301,7 +301,7 @@ class Hydra extends EventEmitter {
                 Object.keys(interfaces).
                   forEach((itf) => {
                     interfaces[itf].forEach((interfaceRecord)=>{
-                      if (!firstSelected && itf === 'eth0') {
+                      if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
                         this.config.serviceIP = interfaceRecord.address;
                         firstSelected = true;
                       }
