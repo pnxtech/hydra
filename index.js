@@ -541,6 +541,13 @@ class Hydra extends EventEmitter {
       this._flushRoutes().then(() => {
         let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
         let trans = this.redisdb.multi();
+        [
+          `[get]/${this.serviceName}`,
+          `[get]/${this.serviceName}/`,
+          `[get]/${this.serviceName}/:rest`
+        ].forEach((pattern) => {
+          routes.push(pattern);
+        });
         routes.forEach((route) => {
           trans.sadd(routesKey, route);
         });
