@@ -343,14 +343,14 @@ class Hydra extends EventEmitter {
       clearInterval(this.presenceTimerInteval);
       clearInterval(this.healthTimerInterval);
 
-      this.redisdb.multi()
-        .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
-        .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, KEY_EXPIRATION_TTL)
-        .exec();
-
       const promises = [];
       if (!this.testMode) {
         this._logMessage('error', 'Service is shutting down.');
+        this.redisdb.multi()
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, KEY_EXPIRATION_TTL)
+          .exec();
+
         if (this.mcMessageChannelClient) {
           promises.push(this.mcMessageChannelClient.quitAsync());
         }
