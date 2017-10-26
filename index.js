@@ -28,6 +28,7 @@ const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
 const ONE_SECOND = 1000; // milliseconds
+const ONE_WEEK_IN_SECONDS = 604800;
 const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
 const HEALTH_UPDATE_INTERVAL = 5000;
 const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / ONE_SECOND) * 3;
@@ -341,9 +342,15 @@ class Hydra extends EventEmitter {
     return new Promise((resolve) => {
       clearInterval(this.presenceTimerInteval);
       clearInterval(this.healthTimerInterval);
+
       const promises = [];
       if (!this.testMode) {
         this._logMessage('error', 'Service is shutting down.');
+        this.redisdb.multi()
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, KEY_EXPIRATION_TTL)
+          .exec();
+
         if (this.mcMessageChannelClient) {
           promises.push(this.mcMessageChannelClient.quitAsync());
         }
@@ -359,6 +366,8 @@ class Hydra extends EventEmitter {
           this.redisdb.quit();
           Promise.all(promises).then(resolve);
         });
+        this.redisdb.quit();
+        Promise.all(promises).then(resolve);
       } else {
         Promise.all(promises).then(resolve);
       }
@@ -704,10 +713,9 @@ class Hydra extends EventEmitter {
       port: this.config.servicePort,
       hostName: this.hostName
     });
-    if (entry) {
+    if (entry && !this.redisdb.closing) {
       this.redisdb.setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, KEY_EXPIRATION_TTL, this.instanceID);
       this.redisdb.hset(`${redisPreKey}:nodes`, this.instanceID, entry);
-      const ONE_WEEK_IN_SECONDS = 604800;
       this.redisdb.multi()
         .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
         .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
@@ -795,12 +803,14 @@ class Hydra extends EventEmitter {
       // however the above call to the application logger would be one way of detecting the issue.
       if (this.isService) {
         if (entry.toLowerCase().indexOf('redis') === -1) {
-          let key = `${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`;
-          this.redisdb.multi()
-            .select(HYDRA_REDIS_DB)
-            .lpush(key, entry)
-            .ltrim(key, 0, MAX_ENTRIES_IN_HEALTH_LOG - 1)
-            .exec();
+          if (!this.redisdb.closing) {
+            let key = `${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`;
+            this.redisdb.multi()
+              .select(HYDRA_REDIS_DB)
+              .lpush(key, entry)
+              .ltrim(key, 0, MAX_ENTRIES_IN_HEALTH_LOG - 1)
+              .exec();
+          }
         }
       }
     } else {
