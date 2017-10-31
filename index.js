@@ -348,7 +348,7 @@ class Hydra extends EventEmitter {
         this._logMessage('error', 'Service is shutting down.');
         this.redisdb.multi()
           .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
-          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, KEY_EXPIRATION_TTL)
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
           .exec();
 
         if (this.mcMessageChannelClient) {
