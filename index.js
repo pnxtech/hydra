@@ -1,3 +1,7 @@
+'use strict';
+
+const debug = require('debug')('hydra');
+
 const Promise = require('bluebird');
 Promise.series = (iterable, action) => {
   return Promise.mapSeries(
@@ -10,7 +14,7 @@ const EventEmitter = require('events');
 const util = require('util');
 const uuid = require('uuid');
 const Route = require('route-parser');
-
+const os = require('os');
 const Utils = require('./lib/utils');
 const UMFMessage = require('./lib/umfmessage');
 const RedisConnection = require('./lib/redis-connection');
@@ -24,6 +28,7 @@ const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
 const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
 const ONE_SECOND = 1000; // milliseconds
+const ONE_WEEK_IN_SECONDS = 604800;
 const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
 const HEALTH_UPDATE_INTERVAL = 5000;
 const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / ONE_SECOND) * 3;
@@ -60,6 +65,7 @@ class Hydra extends EventEmitter {
     this.presenceTimerInteval = null;
     this.healthTimerInterval = null;
     this.initialized = false;
+    this.hostName = os.hostname();
     this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
   }
 
@@ -271,8 +277,38 @@ class Hydra extends EventEmitter {
                 ready();
               });
             } else if (!this.config.serviceIP || this.config.serviceIP === '') {
-              let ip = require('ip');
-              this.config.serviceIP = ip.address();
+              // handle IP selection
+              const os = require('os');
+              let interfaces = os.networkInterfaces();
+              if (this.config.serviceInterface && this.config.serviceInterface !== '') {
+                let segments = this.config.serviceInterface.split('/');
+                if (segments && segments.length === 2) {
+                  let interfaceName = segments[0];
+                  let interfaceMask = segments[1];
+                  Object.keys(interfaces).
+                    forEach((itf) => {
+                      interfaces[itf].forEach((interfaceRecord)=>{
+                        if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
+                          this.config.serviceIP = interfaceRecord.address;
+                        }
+                      });
+                    });
+                } else {
+                  throw new Error('config serviceInterface is not a valid format');
+                }
+              } else {
+                // not using serviceInterface - just select first eth0 entry.
+                let firstSelected = false;
+                Object.keys(interfaces).
+                  forEach((itf) => {
+                    interfaces[itf].forEach((interfaceRecord)=>{
+                      if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
+                        this.config.serviceIP = interfaceRecord.address;
+                        firstSelected = true;
+                      }
+                    });
+                  });
+              }
               this._updateInstanceData();
               ready();
             } else {
@@ -306,15 +342,19 @@ class Hydra extends EventEmitter {
     return new Promise((resolve) => {
       clearInterval(this.presenceTimerInteval);
       clearInterval(this.healthTimerInterval);
+
       const promises = [];
       if (!this.testMode) {
         this._logMessage('error', 'Service is shutting down.');
+        this.redisdb.multi()
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
+          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
+          .exec();
+
         if (this.mcMessageChannelClient) {
-          promises.push(this.mcMessageChannelClient.unsubscribeAsync());
           promises.push(this.mcMessageChannelClient.quitAsync());
         }
         if (this.mcDirectMessageChannelClient) {
-          promises.push(this.mcDirectMessageChannelClient.unsubscribeAsync());
           promises.push(this.mcDirectMessageChannelClient.quitAsync());
         }
       }
@@ -326,6 +366,8 @@ class Hydra extends EventEmitter {
           this.redisdb.quit();
           Promise.all(promises).then(resolve);
         });
+        this.redisdb.quit();
+        Promise.all(promises).then(resolve);
       } else {
         Promise.all(promises).then(resolve);
       }
@@ -508,6 +550,13 @@ class Hydra extends EventEmitter {
       this._flushRoutes().then(() => {
         let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
         let trans = this.redisdb.multi();
+        [
+          `[get]/${this.serviceName}`,
+          `[get]/${this.serviceName}/`,
+          `[get]/${this.serviceName}/:rest`
+        ].forEach((pattern) => {
+          routes.push(pattern);
+        });
         routes.forEach((route) => {
           trans.sadd(routesKey, route);
         });
@@ -661,12 +710,12 @@ class Hydra extends EventEmitter {
       updatedOn: this._getTimeStamp(),
       processID: process.pid,
       ip: this.config.serviceIP,
-      port: this.config.servicePort
+      port: this.config.servicePort,
+      hostName: this.hostName
     });
-    if (entry) {
+    if (entry && !this.redisdb.closing) {
       this.redisdb.setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, KEY_EXPIRATION_TTL, this.instanceID);
       this.redisdb.hset(`${redisPreKey}:nodes`, this.instanceID, entry);
-      const ONE_WEEK_IN_SECONDS = 604800;
       this.redisdb.multi()
         .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
         .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
@@ -711,6 +760,7 @@ class Hydra extends EventEmitter {
     return {
       serviceName: this.serviceName,
       instanceID: this.instanceID,
+      hostName: this.hostName,
       sampledOn: this._getTimeStamp(),
       processID: process.pid,
       architecture: process.arch,
@@ -741,22 +791,26 @@ class Hydra extends EventEmitter {
       msg: message
     };
 
+    let entry = Utils.safeJSONStringify(errMessage);
+    debug(entry);
+
     if (!suppressEmit) {
       this.emit('log', errMessage);
     }
 
-    let entry = Utils.safeJSONStringify(errMessage);
     if (entry) {
       // If issue is with Redis we can't use Redis to log this error.
       // however the above call to the application logger would be one way of detecting the issue.
       if (this.isService) {
         if (entry.toLowerCase().indexOf('redis') === -1) {
-          let key = `${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`;
-          this.redisdb.multi()
-            .select(HYDRA_REDIS_DB)
-            .lpush(key, entry)
-            .ltrim(key, 0, MAX_ENTRIES_IN_HEALTH_LOG - 1)
-            .exec();
+          if (!this.redisdb.closing) {
+            let key = `${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`;
+            this.redisdb.multi()
+              .select(HYDRA_REDIS_DB)
+              .lpush(key, entry)
+              .ltrim(key, 0, MAX_ENTRIES_IN_HEALTH_LOG - 1)
+              .exec();
+          }
         }
       }
     } else {
@@ -1890,6 +1944,16 @@ class IHydra extends Hydra {
    */
   getInstanceVersion() {
     return super._getInstanceVersion();
+  }
+
+  /**
+   * @name getHealth
+   * @summary Retrieve service health info.
+   * @private
+   * @return {object} obj - object containing service health info
+   */
+  getHealth() {
+    return this._getHealth();
   }
 
   /**

@@ -1,10 +1,10 @@
 {
-  "name": "@ccondry/hydra",
-  "version": "1.4.8",
+  "name": "hydra",
+  "version": "1.4.29",
   "license": "MIT",
-  "author": "Coty Condry",
-  "contributors": "https://gitlab.com/ccondry/hydra/graphs/contributors",
-  "description": "This is a fork of flywheelsports/hydra v1.4.8 with some minor fixes. Original description: Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
+  "author": "Carlos Justiniano",
+  "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
+  "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
   "keywords": [
     "hydra",
     "hydra-core",
@@ -20,14 +20,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/ccondry/hydra.git"
+    "url": "git+https://github.com/flywheelsports/hydra.git"
   },
   "dependencies": {
     "bluebird": "3.5.0",
-    "ip": "1.1.5",
+    "debug": "2.6.8",
     "redis": "2.7.1",
     "redis-url": "1.2.1",
     "route-parser": "0.0.5",
+    "umf": "1.4.6",
     "uuid": "3.0.1"
   },
   "devDependencies": {
@@ -42,7 +43,7 @@
     "hydra": "index.js"
   },
   "bugs": {
-    "url": "https://gitlab.com/ccondry/hydra/issues"
+    "url": "https://github.com/flywheelsports/hydra/issues"
   },
-  "homepage": "https://gitlab.com/ccondry/hydra#readme"
+  "homepage": "https://github.com/flywheelsports/hydra#readme"
 }
