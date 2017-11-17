@@ -22,6 +22,7 @@ const ServerResponse = require('./lib/server-response');
 let serverResponse = new ServerResponse();
 const ServerRequest = require('./lib/server-request');
 let serverRequest = new ServerRequest();
+const Cache = require('./lib/cache');
 
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
@@ -66,6 +67,7 @@ class Hydra extends EventEmitter {
     this.healthTimerInterval = null;
     this.initialized = false;
     this.hostName = os.hostname();
+    this.internalCache = new Cache();
     this.ready = () => Promise.reject(new Error('You must call hydra.init() before invoking hydra.ready()'));
   }
 
@@ -922,6 +924,12 @@ class Hydra extends EventEmitter {
   _checkServicePresence(name) {
     name = name || this._getServiceName();
     return new Promise((resolve, reject) => {
+      let cacheKey = `checkServicePresence:${name}`;
+      let cachedValue = this.internalCache.get(cacheKey);
+      if (cachedValue) {
+        resolve(cachedValue);
+        return;
+      }
       this._getKeys(`*:${name}:*:presence`)
         .then((instances) => {
           if (instances.length === 0) {
@@ -947,6 +955,7 @@ class Hydra extends EventEmitter {
                   instanceList.push(instanceObj);
                 }
               });
+              this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
               resolve(instanceList);
             }
           });
@@ -1002,6 +1011,12 @@ class Hydra extends EventEmitter {
       name = this._getServiceName();
     }
     return new Promise((resolve, reject) => {
+      let cacheKey = `getServiceHealth:${name}`;
+      let cachedValue = this.internalCache.get(cacheKey);
+      if (cachedValue) {
+        resolve(cachedValue);
+        return;
+      }
       this._getKeys(`*:${name}:*:health`)
         .then((instances) => {
           if (instances.length === 0) {
@@ -1019,6 +1034,7 @@ class Hydra extends EventEmitter {
               let instanceList = result.map((instance) => {
                 return Utils.safeJSONParse(instance);
               });
+              this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
               resolve(instanceList);
             }
           });
