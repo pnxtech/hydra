@@ -558,7 +558,7 @@ class Hydra extends EventEmitter {
   _onMessage(channel, messageId) {
     this.redisdb.get(`${redisPreKey}:message:${messageId}`, (err, _result) => {
       if (err) {
-        this._logMessage('error', err.message);
+        this._logMessage('error', `Couldn't get message ${messageId} payload: ${err.message}`);
         return;
       }
       let msg = Utils.safeJSONParse(_result);
@@ -1374,7 +1374,8 @@ class Hydra extends EventEmitter {
         strMessage,
         (err, result) => {
           if (err) {
-            throw err;
+            this._logMessage('error', `Couldn't set message ${messageId} payload: ${err.message}`);
+            return;
           }
           messageChannel.publish(channel, messageId);
         }
