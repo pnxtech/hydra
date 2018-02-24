@@ -3,3 +3,6 @@
 scratch.*
 node_modules/
 properties.js
+.nyc_output/
+.npmrc
+
