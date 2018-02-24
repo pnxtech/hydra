@@ -196,10 +196,9 @@ describe('Hydra', function() {
   });
 
   /**
-  /**
   * @description getServices should return a list of services
   */
-  it('should see that getServices returns list services', (done) => {
+  it('should see that getServices returns list of services', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
         hydra.registerService()
@@ -216,66 +215,10 @@ describe('Hydra', function() {
       });
   });
 
-  /* @description getServiceNodes should return a list of services
-  */
-  it('should see that getServiceNodes returns list services', (done) => {
-    hydra.init(getConfig(), true)
-      .then(() => {
-        hydra.registerService()
-          .then((_serviceInfo) => {
-            hydra.getServiceNodes()
-              .then((nodes) => {
-                expect(nodes.length).to.be.above(0);
-                expect(nodes[0]).to.have.property('serviceName');
-                expect(nodes[0]).to.have.property('instanceID');
-                expect(nodes[0]).to.have.property('processID');
-                expect(nodes[0]).to.have.property('ip');
-                done();
-              });
-          });
-      });
-  });
-
   /**
-  * @description getServiceName should return name of service
+  *  @description getServiceNodes should return a list of services
   */
-  it('should see that getServiceName returns name of service', (done) => {
-    hydra.init(getConfig(), true)
-      .then(() => {
-        hydra.registerService()
-          .then((serviceInfo) => {
-            expect(serviceInfo).not.null;
-            expect(serviceInfo.serviceName).to.equal('test-service');
-            expect(hydra.getServiceName()).to.equal(serviceInfo.serviceName);
-            done();
-          });
-      });
-  });
-
-  /**
-  /**
-  * @description getServices should return a list of services
-  */
-  it('should see that getServices returns list services', (done) => {
-    hydra.init(getConfig(), true)
-      .then(() => {
-        hydra.registerService()
-          .then((_serviceInfo) => {
-            hydra.getServices()
-              .then((services) => {
-                expect(services.length).to.be.above(0);
-                expect(services[0]).to.have.property('serviceName');
-                expect(services[0]).to.have.property('type');
-                expect(services[0]).to.have.property('registeredOn');
-                done();
-              });
-          });
-      });
-  });
-
-  /* @description getServiceNodes should return a list of services
-  */
-  it('should see that getServiceNodes returns list services', (done) => {
+  it('should see that getServiceNodes returns list of service nodes', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
         hydra.registerService()
@@ -344,7 +287,7 @@ describe('Hydra', function() {
   });
 
   /**
-  * @summary service should be discoverable
+  * @description service should be discoverable
   */
   it('should be able to discover a service', (done) => {
     hydra.init(getConfig(), true)
@@ -365,7 +308,7 @@ describe('Hydra', function() {
   });
 
   /**
-  * @summary invalid service should not be discoverable
+  * @description invalid service should not be discoverable
   */
   it('should return an error if a service doesn\'t exists', (done) => {
     hydra.init(getConfig(), true)
@@ -389,7 +332,7 @@ describe('Hydra', function() {
   });
 
   /**
-  * @summary get service presence info
+  * @description get service presence info
   */
   it('should be able to retrieve service presence', (done) => {
     hydra.init(getConfig(), true)
