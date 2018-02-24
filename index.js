@@ -1382,9 +1382,20 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
             return;
           }
+          // Did the user specify a specific service instance to use?
           if (instance && instance !== '') {
-            this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
+            // Make sure supplied instance actually exists in the array
+            if (instances.includes(instance)) {
+              this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
+            } else {
+              let msg = `Unavailable ${serviceName} instance named ${instance}`;
+              this._logMessage('error', msg);
+              resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
+              return;
+            }
           } else {
+            // No -- so use a random available service instance from the list
+            // Note: The list is currently pre-randomized so [0] is valid
             let serviceInstance = instances[0];
             this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
           }
