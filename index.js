@@ -1368,7 +1368,7 @@ class Hydra extends EventEmitter {
    * @summary Sends a message to an instances of a hydra service.
    * @param {object} message - UMF formatted message object
    * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
+   *                  HTTP error in resolve() if something bad happened
    */
   _sendMessage(message) {
     return new Promise((resolve, _reject) => {
@@ -1384,9 +1384,20 @@ class Hydra extends EventEmitter {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
             return;
           }
+          // Did the user specify a specific service instance to use?
           if (instance && instance !== '') {
-            this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
+            // Make sure supplied instance actually exists in the array
+            if (instances.includes(instance)) {
+              this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
+            } else {
+              let msg = `Unavailable ${serviceName} instance named ${instance}`;
+              this._logMessage('error', msg);
+              resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, msg));
+              return;
+            }
           } else {
+            // Send to a random service.  It's random beause currently _getServicePresence()
+            // returns a shuffled array.
             let serviceInstance = instances[0];
             this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${serviceInstance.instanceID}`, message);
           }
