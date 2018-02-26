@@ -947,7 +947,7 @@ class Hydra extends EventEmitter {
    *              have some dead serivces, etc. as used in getServiceHealthAll()
    *              for example.
    * @param {string} [name=our service name] - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service presence array or else
+   * @return {promise} promise - which resolves with a randomized service presence array or else
    *              a reject() if a "fatal" error occured (Redis error for example) 
    */
   _checkServicePresence(name) {
@@ -956,6 +956,10 @@ class Hydra extends EventEmitter {
       let cacheKey = `checkServicePresence:${name}`;
       let cachedValue = this.internalCache.get(cacheKey);
       if (cachedValue) {
+        // Re-randomized the array each call to make sure we return a good
+        // random set each time we access the cache... no need to store
+        // the new random array again since it will just be randomzied again next call
+        Utils.shuffeArray(cachedValue)
         resolve(cachedValue);
         return;
       }
