@@ -16,7 +16,8 @@
     "node": ">=6.2.1"
   },
   "scripts": {
-    "test": "mocha specs --reporter spec"
+    "test": "mocha specs --reporter spec",
+    "coverage": "nyc --reporter=text ./node_modules/mocha/bin/_mocha specs --reporter spec"
   },
   "repository": {
     "type": "git",
@@ -37,6 +38,7 @@
     "eslint-config-google": "0.7.1",
     "eslint-plugin-mocha": "4.9.0",
     "mocha": "3.3.0",
+    "nyc": "^11.4.1",
     "redis-mock": "0.17.0"
   },
   "bin": {
