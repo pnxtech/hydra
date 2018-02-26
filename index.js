@@ -940,13 +940,15 @@ class Hydra extends EventEmitter {
 
   /**
    * @name _checkServicePresence
-   * @summary Retrieve a service / instance's presence info.
-   * @description Differs from getServicePresence in that it always
-   *              resolves and never reject promise. This is useful
-   *              when _checkServicePresence is called by
-   *              getServiceHealthAll.
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service presence
+   * @summary Retrieves all the "present" service instances information.
+   * @description Differs from getServicePresence (which calls this one)
+   *              in that this performs only bare minimum fatal error checking that
+   *              would throw a reject().  This is useful when it's expected to perhaps
+   *              have some dead serivces, etc. as used in getServiceHealthAll()
+   *              for example.
+   * @param {string} [name=our service name] - service name - note service name is case insensitive
+   * @return {promise} promise - which resolves with service presence array or else
+   *              a reject() if a "fatal" error occured (Redis error for example) 
    */
   _checkServicePresence(name) {
     name = name || this._getServiceName();
