@@ -959,7 +959,7 @@ class Hydra extends EventEmitter {
         // Re-randomized the array each call to make sure we return a good
         // random set each time we access the cache... no need to store
         // the new random array again since it will just be randomzied again next call
-        Utils.shuffeArray(cachedValue)
+        Utils.shuffeArray(cachedValue);
         resolve(cachedValue);
         return;
       }
