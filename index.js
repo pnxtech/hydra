@@ -948,7 +948,7 @@ class Hydra extends EventEmitter {
    *              for example.
    * @param {string} [name=our service name] - service name - note service name is case insensitive
    * @return {promise} promise - which resolves with a randomized service presence array or else
-   *              a reject() if a "fatal" error occured (Redis error for example) 
+   *              a reject() if a "fatal" error occured (Redis error for example)
    */
   _checkServicePresence(name) {
     name = name || this._getServiceName();
@@ -1540,17 +1540,22 @@ class Hydra extends EventEmitter {
   _markQueueMessage(message, completed, reason) {
     let serviceName = this._getServiceName();
     return new Promise((resolve, reject) => {
-      if (reason) {
-        message.body.reason = reason || 'reason not provided';
-      }
       let strMessage = Utils.safeJSONStringify(message);
       this.redisdb.lrem(`${redisPreKey}:${serviceName}:mqinprogress`, -1, strMessage, (err, _data) => {
         if (err) {
           reject(err);
         } else {
+          if (reason) {
+            if (message.bdy) {
+              message.bdy.reason = reason || 'reason not provided';
+            } else if (message.body) {
+              message.body.reason = reason || 'reason not provided';
+            }
+          }
           if (completed) {
             resolve(message);
           } else {
+            strMessage = Utils.safeJSONStringify(message);
             this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqincomplete`, strMessage, (err, data) => {
               if (err) {
                 reject(err);
