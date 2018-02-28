@@ -71,6 +71,29 @@ describe('Hydra', function() {
   });
 
   /**
+  * @description Hydra should fail on init() if called more than once
+  */
+  it('should fail if init called more than once', (done) => {
+    hydra.init(getConfig(), true)
+      .then(() => {
+        hydra.init(getConfig(), true)
+          .then(() => {
+            expect(true).to.be.false;
+            done(); 
+          })
+          .catch((err) => {
+            expect(err).to.not.be.null;
+            expect(err.message).to.equal('Hydra.init() already invoked');
+            done();
+          });
+      })
+      .catch((err) => {
+        expect(true);
+        done();
+      });
+  });
+
+  /**
   * @description Hydra should fail to load without a configuration file
   */
   it('should fail without config file', (done) => {

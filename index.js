@@ -35,7 +35,7 @@ const HEALTH_UPDATE_INTERVAL = 5000;
 const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / ONE_SECOND) * 3;
 const KEYS_PER_SCAN = '100';
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
-
+const INSTANCE_ID_NOT_SET = 'not set';
 /**
  * @name Hydra
  * @summary Base class for Hydra.
@@ -50,7 +50,7 @@ class Hydra extends EventEmitter {
   constructor() {
     super();
 
-    this.instanceID = 'not set';
+    this.instanceID = INSTANCE_ID_NOT_SET;
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
     this.messageChannelPool = {};
@@ -99,9 +99,15 @@ class Hydra extends EventEmitter {
    * @param {mixed} config - a string with a path to a configuration file or an
    *                         object containing hydra specific keys/values
    * @param {boolean} testMode - whether hydra is being started in unit test mode
-   * @return {object} promise - resolves with this._init
+   * @return {object} promise - resolves with this._init or rejects with an appropriate
+   *                  error if something went wrong
    */
   init(config, testMode) {
+    // Reject() if we've already been called successfully
+    if (INSTANCE_ID_NOT_SET !== this.instanceID) {
+      return Promise.reject(new Error('Hydra.init() already invoked'));
+    }
+
     this.testMode = testMode;
 
     if (typeof config === 'string') {
