@@ -1615,6 +1615,27 @@ class Hydra extends EventEmitter {
   }
 
   /**
+   * @name _reconfigure
+   * @summary Sends a message to all present instances of a hydra service about the config changes
+   * @param {any} label in the format of 'my_service:1.0.0'
+   * @return {promise} Promise from sendBroadcastMessage
+   * @memberof Hydra
+   */
+  _reconfigure(label) {
+    let parts = label.split(':');
+
+    return this._sendBroadcastMessage(UMFMessage.createMessage({
+      to: `${parts[0]}:/`,
+      frm: `${this.serviceName}:/`,
+      typ: 'reconfigure',
+      bdy: {
+        action: 'reconfigure',
+        label: label
+      }
+    }));
+  }
+
+  /**
    * @name _putConfig
    * @summary store a configuration file
    * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
@@ -1633,6 +1654,7 @@ class Hydra extends EventEmitter {
         if (err) {
           reject(new Error('Unable to set :configs key in Redis db.'));
         } else {
+          this._reconfigure(label);
           resolve();
         }
       });
