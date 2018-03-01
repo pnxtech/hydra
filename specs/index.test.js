@@ -38,10 +38,10 @@ function getConfig() {
 process.chdir('./specs');
 
 /**
-* @name Tests
-* @summary Hydra Test Suite
+* @name Index Tests
+* @summary Hydra Main Test Suite
 */
-describe('Hydra', function() {
+describe('Hydra Main', function() {
   this.timeout(SECOND * 10);
 
   beforeEach(() => {
@@ -374,3 +374,9 @@ describe('Hydra', function() {
       });
   });
 });
+
+/**
+* Change back to parent directory to maintain proper state
+*/
+process.chdir('..');
+
