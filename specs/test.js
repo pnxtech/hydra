@@ -79,7 +79,7 @@ describe('Hydra', function() {
         hydra.init(getConfig(), true)
           .then(() => {
             expect(true).to.be.false;
-            done(); 
+            done();
           })
           .catch((err) => {
             expect(err).to.not.be.null;
@@ -87,7 +87,7 @@ describe('Hydra', function() {
             done();
           });
       })
-      .catch((err) => {
+      .catch((_err) => {
         expect(true);
         done();
       });
