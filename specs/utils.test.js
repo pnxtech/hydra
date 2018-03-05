@@ -25,7 +25,7 @@ describe('Utils', function() {
   * @description MD5 should return a valid MD5 hash
   */
   it('should return valid MD5 hash', (done) => {
-    const myMD5 = Utils.md5Hash('TEST_KEY') ;
+    const myMD5 = Utils.md5Hash('TEST_KEY');
     expect(myMD5).to.be.equal('58cf16b25485a0116b85806bba9ca7e4');
     done();
   });
