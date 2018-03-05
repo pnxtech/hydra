@@ -3,7 +3,6 @@
 require('./helpers/chai.js');
 
 const Utils = require('../lib/utils');
-const version = require('../package.json').version;
 const SECOND = 1000;
 
 
@@ -35,7 +34,7 @@ describe('Utils', function() {
   * @description safeJSONStringy should return valid JSON string
   */
   it('should return valid JSON string', (done) => {
-    const myData = {'key' : 'test'} ;
+    const myData = {'key': 'test'};
     const myJSON = Utils.safeJSONStringify(myData);
     expect(myJSON).to.be.equal('{"key":"test"}');
     done();
@@ -46,7 +45,7 @@ describe('Utils', function() {
   */
   it('should return valid JSON Error string', (done) => {
     const myError = new Error('OOPS');
-    const myData = {'error' : myError};
+    const myData = {'error': myError};
     const myJSON = Utils.safeJSONStringify(myData);
     expect(myJSON).to.include('OOPS');
     done();
