@@ -965,7 +965,7 @@ class Hydra extends EventEmitter {
         // Re-randomized the array each call to make sure we return a good
         // random set each time we access the cache... no need to store
         // the new random array again since it will just be randomzied again next call
-        Utils.shuffeArray(cachedValue);
+        Utils.shuffleArray(cachedValue);
         resolve(cachedValue);
         return;
       }
@@ -994,7 +994,7 @@ class Hydra extends EventEmitter {
                   instanceList.push(instanceObj);
                 }
               });
-              Utils.shuffeArray(instanceList);
+              Utils.shuffleArray(instanceList);
               this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
               resolve(instanceList);
             }
