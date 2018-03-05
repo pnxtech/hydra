@@ -1397,7 +1397,8 @@ class Hydra extends EventEmitter {
           // Did the user specify a specific service instance to use?
           if (instance && instance !== '') {
             // Make sure supplied instance actually exists in the array
-            if (instances.includes(instance)) {
+            let found = instances.filter((entry) => entry.instanceID === instance);
+            if (found.length > 0) {
               this._sendMessageThroughChannel(`${mcMessageKey}:${serviceName}:${instance}`, message);
             } else {
               let msg = `Unavailable ${serviceName} instance named ${instance}`;
