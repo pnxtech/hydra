@@ -3,16 +3,9 @@
 
 require('./helpers/chai.js');
 
-const rewire = require('rewire');
-const umfRewire = rewire('../lib/umfmessage');
 const UMFMessage = require('../lib/umfmessage');
 const version = require('../package.json').version;
 const SECOND = 1000;
-
-// Get a copy of the private Class so we can test it
-let UMFMessageProxy = umfRewire.__get__('UMFMessage');
-
-let umfHelper;
 
 /**
 * @name UMFMessage Tests
@@ -28,40 +21,6 @@ describe('UMFMessage', function() {
     done();
   });
 
-  /**
-  * @description Get a valid ISO timestamp
-  */
-  it('should get valid ISO timestamp', (done) => {
-    umfHelper = new UMFMessageProxy();
-    const timeStamp = umfHelper.getTimeStamp();
-    expect(timeStamp).to.be.string;
-    expect(timeStamp.length).to.equal(24);
-    done();
-  });
-
-  /**
-  * @description Get a valid long Message ID
-  */
-  it('should get valid long Message ID', (done) => {
-    umfHelper = new UMFMessageProxy();
-    const messageID = umfHelper.createMessageID();
-    expect(messageID).to.be.string;
-    expect(messageID.length).to.equal(36);
-    done();
-  });
-
-  /**
-  * @description Get a valid short Message ID
-  */
-  it('should get valid short Message ID', (done) => {
-    umfHelper = new UMFMessageProxy();
-    const shortMessageID = umfHelper.createShortMessageID();
-    expect(shortMessageID).to.be.string;
-    expect(shortMessageID.length).to.be.below(16);
-    done();
-  });
-
- 
   /**
   * @description Get a valid UMF message from a base long message
   */
