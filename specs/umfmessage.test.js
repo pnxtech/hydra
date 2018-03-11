@@ -4,7 +4,6 @@
 require('./helpers/chai.js');
 
 const UMFMessage = require('../lib/umfmessage');
-const version = require('../package.json').version;
 const SECOND = 1000;
 
 /**
@@ -184,7 +183,7 @@ describe('UMFMessage', function() {
     done();
   });
 
- /**
+  /**
   * @description Create a signed message
   */
   it('should create a signature for the message', (done) => {
