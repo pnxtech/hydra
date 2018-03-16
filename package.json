@@ -1,6 +1,6 @@
 {
   "name": "hydra",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "license": "MIT",
   "author": "Carlos Justiniano",
   "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
@@ -24,13 +24,13 @@
     "url": "git+https://github.com/flywheelsports/hydra.git"
   },
   "dependencies": {
-    "bluebird": "3.5.0",
+    "bluebird": "3.5.1",
     "debug": "2.6.9",
-    "redis": "2.7.1",
+    "redis": "2.8.0",
     "redis-url": "1.2.1",
     "route-parser": "0.0.5",
     "umf": "1.4.6",
-    "uuid": "3.0.1"
+    "uuid": "3.2.1"
   },
   "devDependencies": {
     "chai": "3.5.0",
@@ -38,7 +38,7 @@
     "eslint-config-google": "0.7.1",
     "eslint-plugin-mocha": "4.9.0",
     "mocha": "3.3.0",
-    "nyc": "^11.4.1",
+    "nyc": "11.4.1",
     "redis-mock": "0.17.0"
   },
   "nyc": {
