@@ -1563,7 +1563,7 @@ class Hydra extends EventEmitter {
             resolve(message);
           } else {
             strMessage = Utils.safeJSONStringify(message);
-            this.redisdb.lpush(`${redisPreKey}:${serviceName}:mqincomplete`, strMessage, (err, data) => {
+            this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqincomplete`, strMessage, (err, data) => {
               if (err) {
                 reject(err);
               } else {
