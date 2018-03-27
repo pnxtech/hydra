@@ -27,7 +27,7 @@ const Cache = require('./lib/cache');
 let HYDRA_REDIS_DB = 0;
 const redisPreKey = 'hydra:service';
 const mcMessageKey = 'hydra:service:mc';
-const MAX_ENTRIES_IN_HEALTH_LOG = 1024;
+const MAX_ENTRIES_IN_HEALTH_LOG = 64;
 const ONE_SECOND = 1000; // milliseconds
 const ONE_WEEK_IN_SECONDS = 604800;
 const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
@@ -1507,7 +1507,7 @@ class Hydra extends EventEmitter {
       }
 
       let serviceName = parsedRoute.serviceName;
-      this.redisdb.rpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(umfmsg.toShort()), (err, _data) => {
+      this.redisdb.lpush(`${redisPreKey}:${serviceName}:mqrecieved`, Utils.safeJSONStringify(umfmsg.toShort()), (err, _data) => {
         if (err) {
           reject(err);
         } else {
