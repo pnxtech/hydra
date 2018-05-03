@@ -787,8 +787,7 @@ class Hydra extends EventEmitter {
 
     memory = memory.replace(/[\ \{\}.|\n]/g, '');
     lines = memory.split(',');
-
-    Array.from(lines, (line) => {
+    lines.forEach((line) => {
       keyval = line.split(':');
       map[keyval[0]] = Number(keyval[1]);
     });
@@ -1131,7 +1130,7 @@ class Hydra extends EventEmitter {
               reject(err);
             } else {
               let response = [];
-              if (result || result.length > 0) {
+              if (result && result.length > 0) {
                 result = result[0];
                 result.forEach((entry) => {
                   response.push(Utils.safeJSONParse(entry));
@@ -1554,12 +1553,10 @@ class Hydra extends EventEmitter {
         if (err) {
           reject(err);
         } else {
-          if (reason) {
-            if (message.bdy) {
-              message.bdy.reason = reason || 'reason not provided';
-            } else if (message.body) {
-              message.body.reason = reason || 'reason not provided';
-            }
+          if (message.bdy) {
+            message.bdy.reason = reason || 'reason not provided';
+          } else if (message.body) {
+            message.body.reason = reason || 'reason not provided';
           }
           if (completed) {
             resolve(message);
