@@ -171,7 +171,9 @@ class Hydra extends EventEmitter {
           let newHydraBranch = Utils.safeJSONParse(hydraService);
           Object.assign(config.hydra, newHydraBranch);
           partialConfig = false;
-        } if (hydraService.includes('|')) {
+        }
+
+        if (hydraService.includes('|')) {
           hydraService = hydraService.replace(/(\r\n|\r|\n)/g, '');
           let newHydraBranch = {};
           let key = '';
@@ -699,14 +701,14 @@ class Hydra extends EventEmitter {
    * @return {boolean} match - true if match, false if not
    */
   _matchRoute(routePath) {
-    let match;
-    this.registeredRoutes.forEach((route) => {
-      match = route.match(routePath);
-      if (match) {
-        return true;
+    let ret = false;
+    for (let route of this.registeredRoutes) {
+      if (route.match(routePath)) {
+        ret = true;
+        break;
       }
-    });
-    return false;
+    }
+    return ret;
   }
 
   /**
