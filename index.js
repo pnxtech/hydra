@@ -1287,6 +1287,7 @@ class Hydra extends EventEmitter {
               .catch((err) => {
                 instanceList.shift();
                 if (instanceList.length === 0) {
+                  this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|${err.message}`);
                   this.emit('metric', `service:unavailable|${instance.serviceName}|${instance.instanceID}|attempts:exhausted`);
                   resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `An instance of ${instance.serviceName} is unavailable`));
                 } else {
