@@ -31,8 +31,8 @@ const MAX_ENTRIES_IN_HEALTH_LOG = 64;
 const ONE_SECOND = 1000; // milliseconds
 const ONE_WEEK_IN_SECONDS = 604800;
 const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
-const HEALTH_UPDATE_INTERVAL = 5000;
-const KEY_EXPIRATION_TTL = parseInt(PRESENCE_UPDATE_INTERVAL / ONE_SECOND) * 3;
+const HEALTH_UPDATE_INTERVAL = ONE_SECOND * 5;
+const KEY_EXPIRATION_TTL = ONE_SECOND * 3;
 const KEYS_PER_SCAN = '100';
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 const INSTANCE_ID_NOT_SET = 'not set';
@@ -171,7 +171,9 @@ class Hydra extends EventEmitter {
           let newHydraBranch = Utils.safeJSONParse(hydraService);
           Object.assign(config.hydra, newHydraBranch);
           partialConfig = false;
-        } if (hydraService.includes('|')) {
+        }
+
+        if (hydraService.includes('|')) {
           hydraService = hydraService.replace(/(\r\n|\r|\n)/g, '');
           let newHydraBranch = {};
           let key = '';
@@ -699,14 +701,14 @@ class Hydra extends EventEmitter {
    * @return {boolean} match - true if match, false if not
    */
   _matchRoute(routePath) {
-    let match;
-    this.registeredRoutes.forEach((route) => {
-      match = route.match(routePath);
-      if (match) {
-        return true;
+    let ret = false;
+    for (let route of this.registeredRoutes) {
+      if (route.match(routePath)) {
+        ret = true;
+        break;
       }
-    });
-    return false;
+    }
+    return ret;
   }
 
   /**
@@ -785,8 +787,7 @@ class Hydra extends EventEmitter {
 
     memory = memory.replace(/[\ \{\}.|\n]/g, '');
     lines = memory.split(',');
-
-    Array.from(lines, (line) => {
+    lines.forEach((line) => {
       keyval = line.split(':');
       map[keyval[0]] = Number(keyval[1]);
     });
@@ -1129,7 +1130,7 @@ class Hydra extends EventEmitter {
               reject(err);
             } else {
               let response = [];
-              if (result || result.length > 0) {
+              if (result && result.length > 0) {
                 result = result[0];
                 result.forEach((entry) => {
                   response.push(Utils.safeJSONParse(entry));
@@ -1552,12 +1553,10 @@ class Hydra extends EventEmitter {
         if (err) {
           reject(err);
         } else {
-          if (reason) {
-            if (message.bdy) {
-              message.bdy.reason = reason || 'reason not provided';
-            } else if (message.body) {
-              message.body.reason = reason || 'reason not provided';
-            }
+          if (message.bdy) {
+            message.bdy.reason = reason || 'reason not provided';
+          } else if (message.body) {
+            message.body.reason = reason || 'reason not provided';
           }
           if (completed) {
             resolve(message);
