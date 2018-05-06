@@ -995,8 +995,10 @@ class Hydra extends EventEmitter {
                   instanceList.push(instanceObj);
                 }
               });
-              Utils.shuffleArray(instanceList);
-              this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
+              if (instanceList.length) {
+                Utils.shuffleArray(instanceList);
+                this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
+              }
               resolve(instanceList);
             }
           });
