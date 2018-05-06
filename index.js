@@ -32,7 +32,7 @@ const ONE_SECOND = 1000; // milliseconds
 const ONE_WEEK_IN_SECONDS = 604800;
 const PRESENCE_UPDATE_INTERVAL = ONE_SECOND;
 const HEALTH_UPDATE_INTERVAL = ONE_SECOND * 5;
-const KEY_EXPIRATION_TTL = ONE_SECOND * 3;
+const KEY_EXPIRATION_TTL = 3; // three seconds
 const KEYS_PER_SCAN = '100';
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 const INSTANCE_ID_NOT_SET = 'not set';
@@ -995,8 +995,10 @@ class Hydra extends EventEmitter {
                   instanceList.push(instanceObj);
                 }
               });
-              Utils.shuffleArray(instanceList);
-              this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
+              if (instanceList.length) {
+                Utils.shuffleArray(instanceList);
+                this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
+              }
               resolve(instanceList);
             }
           });
