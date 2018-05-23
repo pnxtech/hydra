@@ -2084,11 +2084,12 @@ class IHydra extends Hydra {
    *              message.body.fallbackToQueue value set to true, then the
    *              message will be sent to the services message queue.
    * @param {object} message - UMF formatted message
+   * @param {object} sendOpts - serverResponse.send options
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  makeAPIRequest(message) {
-    return super._makeAPIRequest(message);
+  makeAPIRequest(message, sendOpts = { }) {
+    return super._makeAPIRequest(message, sendOpts);
   }
 
   /**
