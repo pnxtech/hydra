@@ -246,7 +246,7 @@ class Hydra extends EventEmitter {
         Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady()).then((..._results) => {
           resolve();
         }).catch((err) => {
-          this._logMessage('error', err.toString())
+          this._logMessage('error', err.toString());
           reject(err);
         });
       };
