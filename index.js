@@ -245,7 +245,10 @@ class Hydra extends EventEmitter {
       let ready = () => {
         Promise.series(this.registeredPlugins, (plugin) => plugin.onServiceReady()).then((..._results) => {
           resolve();
-        }).catch((err) => this._logMessage('error', err.toString()));
+        }).catch((err) => {
+          this._logMessage('error', err.toString());
+          reject(err);
+        });
       };
       this.config = config;
       this._connectToRedis(this.config).then(() => {
