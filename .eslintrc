@@ -1,6 +1,6 @@
 {
   "plugins": ["mocha"],
-  "extends": ["eslint:recommended", "google"],
+  "extends": ["eslint:recommended", "./node_modules/eslint-config-google/index.js"],
   "parserOptions": {
     "ecmaVersion": 6,
     "ecmaFeatures": {
@@ -9,7 +9,7 @@
     "sourceType": "module"
   },
   "rules": {
-    "valid-jsdoc": [ 2, {
+    "valid-jsdoc": [2, {
       "requireReturn": true,
       "requireReturnDescription": true,
       "requireParamDescription": true,
@@ -65,7 +65,9 @@
         "initialized": "never"
       }
     ],
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_"
+    }],
     "keyword-spacing": [
       2,
       {}
