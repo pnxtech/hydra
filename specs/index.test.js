@@ -10,10 +10,10 @@ const redisUrl = '127.0.0.1';
 const SECOND = 1000;
 
 /**
-* @name getConfig
-* @summary Get a new copy of a config object
-* @return {undefined}
-*/
+ * @name getConfig
+ * @summary Get a new copy of a config object
+ * @return {undefined}
+ */
 function getConfig() {
   return Object.assign({}, {
     'hydra': {
@@ -33,14 +33,14 @@ function getConfig() {
 }
 
 /**
-* Change into specs folder so that config loading can find file using relative path.
-*/
+ * Change into specs folder so that config loading can find file using relative path.
+ */
 process.chdir('./specs');
 
 /**
-* @name Index Tests
-* @summary Hydra Main Test Suite
-*/
+ * @name Index Tests
+ * @summary Hydra Main Test Suite
+ */
 describe('Hydra Main', function() {
   this.timeout(SECOND * 10);
 
@@ -58,8 +58,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Confirms that hydra can connect to a redis instance
-  */
+   * @description Confirms that hydra can connect to a redis instance
+   */
   it('should be able to connect to redis', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -71,8 +71,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Hydra should fail on init() if called more than once
-  */
+   * @description Hydra should fail on init() if called more than once
+   */
   it('should fail if init called more than once', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -94,8 +94,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Hydra should fail to load without a configuration file
-  */
+   * @description Hydra should fail to load without a configuration file
+   */
   it('should fail without config file', (done) => {
     hydra.init({}, true)
       .then(() => {
@@ -110,14 +110,14 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Hydra should load if serviceName and servicePort is provided
-  */
+   * @description Hydra should load if serviceName and servicePort is provided
+   */
   it('should load if serviceName and servicePort is provided', (done) => {
     hydra.init({
       hydra: {
-        serviceName: 'test-service',
-        servicePort: 3000
-      }
+          serviceName: 'test-service',
+          servicePort: 3000
+        }
     }, true)
       .then(() => {
         done();
@@ -129,8 +129,32 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Hydra should load without a hydra.redis branch in configuration
-  */
+   * @description Hydra should load if serviceName and servicePort is provided
+   */
+  it('should store as secured if protocol is set to https', (done) => {
+    hydra.init({
+      hydra: {
+          'serviceName': 'test-service',
+          'servicePort': 3000,
+          'serviceProtocol': 'https'
+        }
+    }, true)
+      .then(() => {
+        hydra.registerService().then((serviceInfo) => {
+          expect(serviceInfo).not.null;
+          expect(serviceInfo.serviceProtocol).to.equal('https');
+          done();
+        });
+      })
+      .catch((err) => {
+        expect(err).to.be.null;
+        done();
+      });
+  });
+
+  /**
+   * @description Hydra should load without a hydra.redis branch in configuration
+   */
   it('should load without config hydra.redis branch', (done) => {
     let config = getConfig();
     delete config.hydra.redis;
@@ -145,8 +169,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Hydra should fail if serviceName is missing in config
-  */
+   * @description Hydra should fail if serviceName is missing in config
+   */
   it('should fail without serviceName config', (done) => {
     let config = getConfig();
     delete config.hydra.serviceName;
@@ -163,8 +187,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description Confirms that when hydra registers as a service the expected keys can be found in redis
-  */
+   * @description Confirms that when hydra registers as a service the expected keys can be found in redis
+   */
   it('should be able to register as a service', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -186,8 +210,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description expect serviceName, serviceIP, servicePort and instanceID to exists upon service registration
-  */
+   * @description expect serviceName, serviceIP, servicePort and instanceID to exists upon service registration
+   */
   it('should have a serviceName, serviceIP, servicePort and instanceID', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -203,8 +227,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description getServiceName should return name of service
-  */
+   * @description getServiceName should return name of service
+   */
   it('should see that getServiceName returns name of service', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -219,8 +243,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description getServices should return a list of services
-  */
+   * @description getServices should return a list of services
+   */
   it('should see that getServices returns list of services', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -239,8 +263,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  *  @description getServiceNodes should return a list of services
-  */
+   *  @description getServiceNodes should return a list of services
+   */
   it('should see that getServiceNodes returns list of service nodes', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -260,8 +284,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description presence information should update in redis for a running hydra service
-  */
+   * @description presence information should update in redis for a running hydra service
+   */
   it('should update presence', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -290,8 +314,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description ensure keys expire on shutdown
-  */
+   * @description ensure keys expire on shutdown
+   */
   it('should expire redis keys on shutdown', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -310,8 +334,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description service should be discoverable
-  */
+   * @description service should be discoverable
+   */
   it('should be able to discover a service', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -331,8 +355,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description invalid service should not be discoverable
-  */
+   * @description invalid service should not be discoverable
+   */
   it('should return an error if a service doesn\'t exists', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -355,8 +379,8 @@ describe('Hydra Main', function() {
   });
 
   /**
-  * @description get service presence info
-  */
+   * @description get service presence info
+   */
   it('should be able to retrieve service presence', (done) => {
     hydra.init(getConfig(), true)
       .then(() => {
@@ -376,7 +400,6 @@ describe('Hydra Main', function() {
 });
 
 /**
-* Change back to parent directory to maintain proper state
-*/
+ * Change back to parent directory to maintain proper state
+ */
 process.chdir('..');
-

@@ -44,9 +44,9 @@ const INSTANCE_ID_NOT_SET = 'not set';
  */
 class Hydra extends EventEmitter {
   /**
-  * @name constructor
-  * @return {undefined}
-  */
+   * @name constructor
+   * @return {undefined}
+   */
   constructor() {
     super();
 
@@ -203,7 +203,11 @@ class Hydra extends EventEmitter {
       }
 
       if (partialConfig && process.env.HYDRA_REDIS_URL) {
-        this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
+        this._connectToRedis({
+          redis: {
+              url: process.env.HYDRA_REDIS_URL
+            }
+        })
           .then(() => {
             if (!this.redisdb) {
               reject(new Error('No Redis connection'));
@@ -265,15 +269,15 @@ class Hydra extends EventEmitter {
           this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
           /**
-          * Determine network DNS/IP for this service.
-          * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
-          * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
-          *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
-          * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
-          *   asking Hydra to determine the machine's IP address.
-          * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
-          *   or serviceDNS contains a valid DNS entry.
-          */
+           * Determine network DNS/IP for this service.
+           * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
+           * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
+           *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
+           * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
+           *   asking Hydra to determine the machine's IP address.
+           * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
+           *   or serviceDNS contains a valid DNS entry.
+           */
           if (this.config.serviceDNS && this.config.serviceDNS !== '') {
             this.config.serviceIP = this.config.serviceDNS;
             this._updateInstanceData();
@@ -297,13 +301,13 @@ class Hydra extends EventEmitter {
                   let interfaceName = segments[0];
                   let interfaceMask = segments[1];
                   Object.keys(interfaces).
-                    forEach((itf) => {
-                      interfaces[itf].forEach((interfaceRecord)=>{
-                        if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
-                          this.config.serviceIP = interfaceRecord.address;
-                        }
-                      });
+                  forEach((itf) => {
+                    interfaces[itf].forEach((interfaceRecord) => {
+                      if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
+                        this.config.serviceIP = interfaceRecord.address;
+                      }
                     });
+                  });
                 } else {
                   throw new Error('config serviceInterface is not a valid format');
                 }
@@ -311,14 +315,14 @@ class Hydra extends EventEmitter {
                 // not using serviceInterface - just select first eth0 entry.
                 let firstSelected = false;
                 Object.keys(interfaces).
-                  forEach((itf) => {
-                    interfaces[itf].forEach((interfaceRecord)=>{
-                      if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
-                        this.config.serviceIP = interfaceRecord.address;
-                        firstSelected = true;
-                      }
-                    });
+                forEach((itf) => {
+                  interfaces[itf].forEach((interfaceRecord) => {
+                    if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
+                      this.config.serviceIP = interfaceRecord.address;
+                      firstSelected = true;
+                    }
                   });
+                });
               }
               this._updateInstanceData();
               ready();
@@ -483,8 +487,8 @@ class Hydra extends EventEmitter {
    */
   _serverInstanceID() {
     return uuid.
-      v4().
-      replace(RegExp('-', 'g'), '');
+    v4().
+    replace(RegExp('-', 'g'), '');
   }
 
   /**
@@ -560,7 +564,8 @@ class Hydra extends EventEmitter {
           resolve({
             serviceName: this.serviceName,
             serviceIP: this.config.serviceIP,
-            servicePort: this.config.servicePort
+            servicePort: this.config.servicePort,
+            serviceProtocol: this.config.serviceProtocol
           });
         }
       });
@@ -745,7 +750,8 @@ class Hydra extends EventEmitter {
       processID: process.pid,
       ip: this.config.serviceIP,
       port: this.config.servicePort,
-      hostName: this.hostName
+      hostName: this.hostName,
+      protocol: this.config.serviceProtocol
     });
     if (entry && !this.redisdb.closing) {
       let cmd = (this.testMode) ? 'multi' : 'batch';
@@ -1264,6 +1270,7 @@ class Hydra extends EventEmitter {
               host: instance.ip,
               port: instance.port,
               path: parsedRoute.apiRoute,
+              protocol: (instance.protocol || 'http') + ':',
               method: parsedRoute.httpMethod.toUpperCase()
             };
             let preHeaders = {};
@@ -1278,6 +1285,7 @@ class Hydra extends EventEmitter {
               options.timeout = umfmsg.timeout;
             }
             options.body = Utils.safeJSONStringify(umfmsg.body);
+
             serverRequest.send(Object.assign(options, sendOpts))
               .then((res) => {
                 if (res.payLoad && res.headers['content-type'] && res.headers['content-type'].indexOf('json') > -1) {
@@ -1314,7 +1322,7 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message, sendOpts = { }) {
+  _makeAPIRequest(message, sendOpts = {}) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1649,11 +1657,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _listConfig
-  * @summary Return a list of config keys
-  * @param {string} serviceName - name of service
-  * @return {promise} promise - resolving or rejecting.
-  */
+   * @name _listConfig
+   * @summary Return a list of config keys
+   * @param {string} serviceName - name of service
+   * @return {promise} promise - resolving or rejecting.
+   */
   _listConfig(serviceName) {
     return new Promise((resolve, reject) => {
       this.redisdb.hkeys(`${redisPreKey}:${serviceName}:configs`, (err, result) => {
@@ -1674,55 +1682,55 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getClonedRedisClient
-  * @summary get a Redis client connection which points to the same Redis server that hydra is using
-  * @return {object} - Redis Client
-  */
+   * @name _getClonedRedisClient
+   * @summary get a Redis client connection which points to the same Redis server that hydra is using
+   * @return {object} - Redis Client
+   */
   _getClonedRedisClient() {
     return this.redisdb.duplicate();
   }
 
   /**
-  * @name _getUMFMessageHelper
-  * @summary returns UMF object helper
-  * @return {object} helper - UMF helper
-  */
+   * @name _getUMFMessageHelper
+   * @summary returns UMF object helper
+   * @return {object} helper - UMF helper
+   */
   _getUMFMessageHelper() {
     return require('./lib/umfmessage');
   }
 
   /**
-  * @name _getServerRequestHelper
-  * @summary returns ServerRequest helper
-  * @return {object} helper - service request helper
-  */
+   * @name _getServerRequestHelper
+   * @summary returns ServerRequest helper
+   * @return {object} helper - service request helper
+   */
   _getServerRequestHelper() {
     return require('./lib/server-request');
   }
 
   /**
-  * @name _getServerResponseHelper
-  * @summary returns ServerResponse helper
-  * @return {object} helper - service response helper
-  */
+   * @name _getServerResponseHelper
+   * @summary returns ServerResponse helper
+   * @return {object} helper - service response helper
+   */
   _getServerResponseHelper() {
     return require('./lib/server-response');
   }
 
   /**
-  * @name _getUtilsHelper
-  * @summary returns a utils helper
-  * @return {object} helper - utils helper
-  */
+   * @name _getUtilsHelper
+   * @summary returns a utils helper
+   * @return {object} helper - utils helper
+   */
   _getUtilsHelper() {
     return require('./lib/utils');
   }
 
   /**
-  * @name _getConfigHelper
-  * @summary returns a config helper
-  * @return {object} helper - config helper
-  */
+   * @name _getConfigHelper
+   * @summary returns a config helper
+   * @return {object} helper - config helper
+   */
   _getConfigHelper() {
     return require('./lib/config');
   }
@@ -1757,7 +1765,7 @@ class Hydra extends EventEmitter {
       // No port given, get unassigned port from standard ranges
       if (typeof port === 'undefined' || !port || port == 0) {
         port = '1024-65535';
-      } else if (! /-|,/.test(port.toString())) {
+      } else if (!/-|,/.test(port.toString())) {
         // Specific port given, skip free port check
         resolve(port.toString());
         return;
@@ -1841,7 +1849,10 @@ class Hydra extends EventEmitter {
     portsTried.push(port);
 
     const server = require('net').createServer();
-    server.listen({port, host}, () => {
+    server.listen({
+      port,
+      host
+    }, () => {
       server.once('close', () => {
         callback(port);
       });
@@ -1876,10 +1887,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-  * @name _getParentPackageJSONVersion
-  * @summary Retrieve the version from the host app's package.json file.
-  * @return {string} version - package version
-  */
+   * @name _getParentPackageJSONVersion
+   * @summary Retrieve the version from the host app's package.json file.
+   * @return {string} version - package version
+   */
   _getParentPackageJSONVersion() {
     let version;
     try {
@@ -1924,11 +1935,11 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name use
-  * @summary Use plugins
-  * @param {array} plugins - plugins to process
-  * @return {undefined}
-  */
+   * @name use
+   * @summary Use plugins
+   * @param {array} plugins - plugins to process
+   * @return {undefined}
+   */
   use(...plugins) {
     return super.use(...plugins);
   }
@@ -2210,11 +2221,11 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name listConfig
-  * @summary Return a list of config keys
-  * @param {string} serviceName - name of service
-  * @return {promise} promise - resolving or rejecting.
-  */
+   * @name listConfig
+   * @summary Return a list of config keys
+   * @param {string} serviceName - name of service
+   * @return {promise} promise - resolving or rejecting.
+   */
   listConfig(serviceName) {
     return super._listConfig(serviceName);
   }
@@ -2232,55 +2243,55 @@ class IHydra extends Hydra {
   }
 
   /**
-  * @name getClonedRedisClient
-  * @summary get a Redis client connection which points to the same Redis server that hydra is using
-  * @return {object} - Redis Client
-  */
+   * @name getClonedRedisClient
+   * @summary get a Redis client connection which points to the same Redis server that hydra is using
+   * @return {object} - Redis Client
+   */
   getClonedRedisClient() {
     return super._getClonedRedisClient();
   }
 
   /**
-  * @name getUMFMessageHelper
-  * @summary returns UMF object helper
-  * @return {object} helper - UMF helper
-  */
+   * @name getUMFMessageHelper
+   * @summary returns UMF object helper
+   * @return {object} helper - UMF helper
+   */
   getUMFMessageHelper() {
     return super._getUMFMessageHelper();
   }
 
   /**
-  * @name getServerRequestHelper
-  * @summary returns ServerRequest helper
-  * @return {object} helper - service request helper
-  */
+   * @name getServerRequestHelper
+   * @summary returns ServerRequest helper
+   * @return {object} helper - service request helper
+   */
   getServerRequestHelper() {
     return super._getServerRequestHelper();
   }
 
   /**
-  * @name getServerResponseHelper
-  * @summary returns ServerResponse helper
-  * @return {object} helper - service response helper
-  */
+   * @name getServerResponseHelper
+   * @summary returns ServerResponse helper
+   * @return {object} helper - service response helper
+   */
   getServerResponseHelper() {
     return super._getServerResponseHelper();
   }
 
   /**
-  * @name getUtilsHelper
-  * @summary returns a Utils helper
-  * @return {object} helper - utils helper
-  */
+   * @name getUtilsHelper
+   * @summary returns a Utils helper
+   * @return {object} helper - utils helper
+   */
   getUtilsHelper() {
     return super._getUtilsHelper();
   }
 
   /**
-  * @name getConfigHelper
-  * @summary returns a config helper
-  * @return {object} helper - config helper
-  */
+   * @name getConfigHelper
+   * @summary returns a config helper
+   * @return {object} helper - config helper
+   */
   getConfigHelper() {
     return super._getConfigHelper();
   }
