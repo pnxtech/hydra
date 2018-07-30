@@ -115,9 +115,9 @@ describe('Hydra Main', function() {
   it('should load if serviceName and servicePort is provided', (done) => {
     hydra.init({
       hydra: {
-          serviceName: 'test-service',
-          servicePort: 3000
-        }
+        serviceName: 'test-service',
+        servicePort: 3000
+      }
     }, true)
       .then(() => {
         done();
@@ -134,10 +134,10 @@ describe('Hydra Main', function() {
   it('should store as secured if protocol is set to https', (done) => {
     hydra.init({
       hydra: {
-          'serviceName': 'test-service',
-          'servicePort': 3000,
-          'serviceProtocol': 'https'
-        }
+        'serviceName': 'test-service',
+        'servicePort': 3000,
+        'serviceProtocol': 'https'
+      }
     }, true)
       .then(() => {
         hydra.registerService().then((serviceInfo) => {

@@ -205,8 +205,8 @@ class Hydra extends EventEmitter {
       if (partialConfig && process.env.HYDRA_REDIS_URL) {
         this._connectToRedis({
           redis: {
-              url: process.env.HYDRA_REDIS_URL
-            }
+            url: process.env.HYDRA_REDIS_URL
+          }
         })
           .then(() => {
             if (!this.redisdb) {
@@ -301,13 +301,13 @@ class Hydra extends EventEmitter {
                   let interfaceName = segments[0];
                   let interfaceMask = segments[1];
                   Object.keys(interfaces).
-                  forEach((itf) => {
-                    interfaces[itf].forEach((interfaceRecord) => {
-                      if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
-                        this.config.serviceIP = interfaceRecord.address;
-                      }
+                    forEach((itf) => {
+                      interfaces[itf].forEach((interfaceRecord) => {
+                        if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
+                          this.config.serviceIP = interfaceRecord.address;
+                        }
+                      });
                     });
-                  });
                 } else {
                   throw new Error('config serviceInterface is not a valid format');
                 }
@@ -315,14 +315,14 @@ class Hydra extends EventEmitter {
                 // not using serviceInterface - just select first eth0 entry.
                 let firstSelected = false;
                 Object.keys(interfaces).
-                forEach((itf) => {
-                  interfaces[itf].forEach((interfaceRecord) => {
-                    if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
-                      this.config.serviceIP = interfaceRecord.address;
-                      firstSelected = true;
-                    }
+                  forEach((itf) => {
+                    interfaces[itf].forEach((interfaceRecord) => {
+                      if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
+                        this.config.serviceIP = interfaceRecord.address;
+                        firstSelected = true;
+                      }
+                    });
                   });
-                });
               }
               this._updateInstanceData();
               ready();
@@ -487,8 +487,8 @@ class Hydra extends EventEmitter {
    */
   _serverInstanceID() {
     return uuid.
-    v4().
-    replace(RegExp('-', 'g'), '');
+      v4().
+      replace(RegExp('-', 'g'), '');
   }
 
   /**
