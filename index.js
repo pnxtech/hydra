@@ -44,9 +44,9 @@ const INSTANCE_ID_NOT_SET = 'not set';
  */
 class Hydra extends EventEmitter {
   /**
-   * @name constructor
-   * @return {undefined}
-   */
+  * @name constructor
+  * @return {undefined}
+  */
   constructor() {
     super();
 
@@ -73,35 +73,35 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name use
-   * @summary Adds plugins to Hydra
-   * @param {...object} plugins - plugins to register
-   * @return {object} - Promise which will resolve when all plugins are registered
-   */
+  * @name use
+  * @summary Adds plugins to Hydra
+  * @param {...object} plugins - plugins to register
+  * @return {object} - Promise which will resolve when all plugins are registered
+  */
   use(...plugins) {
     return Promise.series(plugins, (plugin) => this._registerPlugin(plugin));
   }
 
   /**
-   * @name _registerPlugin
-   * @summary Registers a plugin with Hydra
-   * @param {object} plugin - HydraPlugin to use
-   * @return {object} Promise or value
-   */
+  * @name _registerPlugin
+  * @summary Registers a plugin with Hydra
+  * @param {object} plugin - HydraPlugin to use
+  * @return {object} Promise or value
+  */
   _registerPlugin(plugin) {
     this.registeredPlugins.push(plugin);
     return plugin.setHydra(this);
   }
 
   /**
-   * @name init
-   * @summary Register plugins then continue initialization
-   * @param {mixed} config - a string with a path to a configuration file or an
-   *                         object containing hydra specific keys/values
-   * @param {boolean} testMode - whether hydra is being started in unit test mode
-   * @return {object} promise - resolves with this._init or rejects with an appropriate
-   *                  error if something went wrong
-   */
+  * @name init
+  * @summary Register plugins then continue initialization
+  * @param {mixed} config - a string with a path to a configuration file or an
+  *                         object containing hydra specific keys/values
+  * @param {boolean} testMode - whether hydra is being started in unit test mode
+  * @return {object} promise - resolves with this._init or rejects with an appropriate
+  *                  error if something went wrong
+  */
   init(config, testMode) {
     // Reject() if we've already been called successfully
     if (INSTANCE_ID_NOT_SET !== this.instanceID) {
@@ -203,11 +203,7 @@ class Hydra extends EventEmitter {
       }
 
       if (partialConfig && process.env.HYDRA_REDIS_URL) {
-        this._connectToRedis({
-          redis: {
-            url: process.env.HYDRA_REDIS_URL
-          }
-        })
+        this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
               reject(new Error('No Redis connection'));
@@ -239,11 +235,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _init
-   * @summary Initialize Hydra with config object.
-   * @param {object} config - configuration object containing hydra specific keys/values
-   * @return {object} promise - resolving if init success or rejecting otherwise
-   */
+  * @name _init
+  * @summary Initialize Hydra with config object.
+  * @param {object} config - configuration object containing hydra specific keys/values
+  * @return {object} promise - resolving if init success or rejecting otherwise
+  */
   _init(config) {
     return new Promise((resolve, reject) => {
       let ready = () => {
@@ -269,15 +265,15 @@ class Hydra extends EventEmitter {
           this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
           /**
-           * Determine network DNS/IP for this service.
-           * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
-           * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
-           *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
-           * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
-           *   asking Hydra to determine the machine's IP address.
-           * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
-           *   or serviceDNS contains a valid DNS entry.
-           */
+          * Determine network DNS/IP for this service.
+          * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
+          * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
+          *   such as 192.168.100.106 If so, then use DNS lookup to determine an actual dotted IP address.
+          * - Else check whether serviceIP exists and *IS* set to '' - that means the service author is
+          *   asking Hydra to determine the machine's IP address.
+          * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
+          *   or serviceDNS contains a valid DNS entry.
+          */
           if (this.config.serviceDNS && this.config.serviceDNS !== '') {
             this.config.serviceIP = this.config.serviceDNS;
             this._updateInstanceData();
@@ -302,7 +298,7 @@ class Hydra extends EventEmitter {
                   let interfaceMask = segments[1];
                   Object.keys(interfaces).
                     forEach((itf) => {
-                      interfaces[itf].forEach((interfaceRecord) => {
+                      interfaces[itf].forEach((interfaceRecord)=>{
                         if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
                           this.config.serviceIP = interfaceRecord.address;
                         }
@@ -316,7 +312,7 @@ class Hydra extends EventEmitter {
                 let firstSelected = false;
                 Object.keys(interfaces).
                   forEach((itf) => {
-                    interfaces[itf].forEach((interfaceRecord) => {
+                    interfaces[itf].forEach((interfaceRecord)=>{
                       if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
                         this.config.serviceIP = interfaceRecord.address;
                         firstSelected = true;
@@ -339,20 +335,20 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _updateInstanceData
-   * @summary Update instance id and direct message key
-   * @return {undefined}
-   */
+  * @name _updateInstanceData
+  * @summary Update instance id and direct message key
+  * @return {undefined}
+  */
   _updateInstanceData() {
     this.instanceID = this._serverInstanceID();
     this.initialized = true;
   }
 
   /**
-   * @name _shutdown
-   * @summary Shutdown hydra safely.
-   * @return {undefined}
-   */
+  * @name _shutdown
+  * @summary Shutdown hydra safely.
+  * @return {undefined}
+  */
   _shutdown() {
     return new Promise((resolve) => {
       clearInterval(this.presenceTimerInteval);
@@ -391,12 +387,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _connectToRedis
-   * @summary Configure access to Redis and monitor emitted events.
-   * @private
-   * @param {object} config - Redis client configuration
-   * @return {object} promise - resolves or reject
-   */
+  * @name _connectToRedis
+  * @summary Configure access to Redis and monitor emitted events.
+  * @private
+  * @param {object} config - Redis client configuration
+  * @return {object} promise - resolves or reject
+  */
   _connectToRedis(config) {
     let retryStrategy = config.redis.retry_strategy;
     delete config.redis.retry_strategy;
@@ -423,11 +419,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getKeys
-   * @summary Retrieves a list of Redis keys based on pattern.
-   * @param {string} pattern - pattern to filter with
-   * @return {object} promise - promise resolving to array of keys or or empty array
-   */
+  * @name _getKeys
+  * @summary Retrieves a list of Redis keys based on pattern.
+  * @param {string} pattern - pattern to filter with
+  * @return {object} promise - promise resolving to array of keys or or empty array
+  */
   _getKeys(pattern) {
     return new Promise((resolve, _reject) => {
       if (this.testMode) {
@@ -464,12 +460,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getServiceName
-   * @summary Retrieves the service name of the current instance.
-   * @private
-   * @throws Throws an error if this machine isn't an instance.
-   * @return {string} serviceName - returns the service name.
-   */
+  * @name _getServiceName
+  * @summary Retrieves the service name of the current instance.
+  * @private
+  * @throws Throws an error if this machine isn't an instance.
+  * @return {string} serviceName - returns the service name.
+  */
   _getServiceName() {
     if (!this.initialized) {
       let msg = 'init() not called, Hydra requires a configuration object.';
@@ -480,11 +476,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _serverInstanceID
-   * @summary Returns the server instance ID.
-   * @private
-   * @return {string} instance id
-   */
+  * @name _serverInstanceID
+  * @summary Returns the server instance ID.
+  * @private
+  * @return {string} instance id
+  */
   _serverInstanceID() {
     return uuid.
       v4().
@@ -492,12 +488,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _registerService
-   * @summary Registers this machine as a Hydra instance.
-   * @description This is an optional call as this module might just be used to monitor and query instances.
-   * @private
-   * @return {object} promise - resolving if registration success or rejecting otherwise
-   */
+  * @name _registerService
+  * @summary Registers this machine as a Hydra instance.
+  * @description This is an optional call as this module might just be used to monitor and query instances.
+  * @private
+  * @return {object} promise - resolving if registration success or rejecting otherwise
+  */
   _registerService() {
     return new Promise((resolve, reject) => {
       if (!this.initialized) {
@@ -573,13 +569,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _registerRoutes
-   * @summary Register routes
-   * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
-   * @private
-   * @param {array} routes - array of routes
-   * @return {object} Promise - resolving or rejecting
-   */
+  * @name _registerRoutes
+  * @summary Register routes
+  * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
+  * @private
+  * @param {array} routes - array of routes
+  * @return {object} Promise - resolving or rejecting
+  */
   _registerRoutes(routes) {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -636,12 +632,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getRoutes
-   * @summary Retrieves a array list of routes
-   * @param {string} serviceName - name of service to retrieve list of routes.
-   *                 If param is undefined, then the current serviceName is used.
-   * @return {object} Promise - resolving to array of routes or rejection
-   */
+  * @name _getRoutes
+  * @summary Retrieves a array list of routes
+  * @param {string} serviceName - name of service to retrieve list of routes.
+  *                 If param is undefined, then the current serviceName is used.
+  * @return {object} Promise - resolving to array of routes or rejection
+  */
   _getRoutes(serviceName) {
     if (serviceName === undefined) {
       serviceName = this.serviceName;
@@ -659,10 +655,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getAllServiceRoutes
-   * @summary Retrieve all service routes.
-   * @return {object} Promise - resolving to an object with keys and arrays of routes
-   */
+  * @name _getAllServiceRoutes
+  * @summary Retrieve all service routes.
+  * @return {object} Promise - resolving to an object with keys and arrays of routes
+  */
   _getAllServiceRoutes() {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -699,12 +695,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _matchRoute
-   * @summary Matches a route path to a list of registered routes
-   * @private
-   * @param {string} routePath - a URL path to match
-   * @return {boolean} match - true if match, false if not
-   */
+  * @name _matchRoute
+  * @summary Matches a route path to a list of registered routes
+  * @private
+  * @param {string} routePath - a URL path to match
+  * @return {boolean} match - true if match, false if not
+  */
   _matchRoute(routePath) {
     let ret = false;
     for (let route of this.registeredRoutes) {
@@ -717,10 +713,10 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _flushRoutes
-   * @summary Delete's the services routes.
-   * @return {object} Promise - resolving or rejection
-   */
+  * @name _flushRoutes
+  * @summary Delete's the services routes.
+  * @return {object} Promise - resolving or rejection
+  */
   _flushRoutes() {
     return new Promise((resolve, reject) => {
       let routesKey = `${redisPreKey}:${this.serviceName}:service:routes`;
@@ -735,11 +731,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _updatePresence
-   * @summary Update service presence.
-   * @private
-   * @return {undefined}
-   */
+  * @name _updatePresence
+  * @summary Update service presence.
+  * @private
+  * @return {undefined}
+  */
   _updatePresence() {
     let entry = Utils.safeJSONStringify({
       serviceName: this.serviceName,
@@ -763,11 +759,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _updateHealthCheck
-   * @summary Update service heath.
-   * @private
-   * @return {undefined}
-   */
+  * @name _updateHealthCheck
+  * @summary Update service heath.
+  * @private
+  * @return {undefined}
+  */
   _updateHealthCheck() {
     let entry = Object.assign({
       updatedOn: this._getTimeStamp()
@@ -780,11 +776,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getHealth
-   * @summary Retrieve server health info.
-   * @private
-   * @return {object} obj - object containing server info
-   */
+  * @name _getHealth
+  * @summary Retrieve server health info.
+  * @private
+  * @return {object} obj - object containing server info
+  */
   _getHealth() {
     let lines = [];
     let keyval = [];
@@ -814,16 +810,16 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _logMessage
-   * @summary Log a message to the service's health log queue.
-   * @private
-   * @throws Throws an error if this machine isn't an instance.
-   * @event Hydra#log
-   * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
-   * @param {string} message - message to log
-   * @param {boolean} suppressEmit - false by default. If true then suppress log emit
-   * @return {undefined}
-   */
+  * @name _logMessage
+  * @summary Log a message to the service's health log queue.
+  * @private
+  * @throws Throws an error if this machine isn't an instance.
+  * @event Hydra#log
+  * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
+  * @param {string} message - message to log
+  * @param {boolean} suppressEmit - false by default. If true then suppress log emit
+  * @return {undefined}
+  */
   _logMessage(type, message, suppressEmit) {
     let errMessage = {
       ts: this._getTimeStamp(),
@@ -861,11 +857,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getServices
-   * @summary Retrieve a list of available services.
-   * @private
-   * @return {promise} promise - returns a promise
-   */
+  * @name _getServices
+  * @summary Retrieve a list of available services.
+  * @private
+  * @return {promise} promise - returns a promise
+  */
   _getServices() {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -893,11 +889,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getServiceNodes
-   * @summary Retrieve a list of services even if inactive.
-   * @private
-   * @return {promise} promise - returns a promise
-   */
+  * @name _getServiceNodes
+  * @summary Retrieve a list of services even if inactive.
+  * @private
+  * @return {promise} promise - returns a promise
+  */
   _getServiceNodes() {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -924,12 +920,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _findService
-   * @summary Find a service.
-   * @private
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service
-   */
+  * @name _findService
+  * @summary Find a service.
+  * @private
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with service
+  */
   _findService(name) {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -952,17 +948,17 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _checkServicePresence
-   * @summary Retrieves all the "present" service instances information.
-   * @description Differs from getServicePresence (which calls this one)
-   *              in that this performs only bare minimum fatal error checking that
-   *              would throw a reject().  This is useful when it's expected to perhaps
-   *              have some dead serivces, etc. as used in getServiceHealthAll()
-   *              for example.
-   * @param {string} [name=our service name] - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with a randomized service presence array or else
-   *              a reject() if a "fatal" error occured (Redis error for example)
-   */
+  * @name _checkServicePresence
+  * @summary Retrieves all the "present" service instances information.
+  * @description Differs from getServicePresence (which calls this one)
+  *              in that this performs only bare minimum fatal error checking that
+  *              would throw a reject().  This is useful when it's expected to perhaps
+  *              have some dead serivces, etc. as used in getServiceHealthAll()
+  *              for example.
+  * @param {string} [name=our service name] - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with a randomized service presence array or else
+  *              a reject() if a "fatal" error occured (Redis error for example)
+  */
   _checkServicePresence(name) {
     name = name || this._getServiceName();
     return new Promise((resolve, reject) => {
@@ -1013,12 +1009,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name getServicePresence
-   * @summary Retrieve a service / instance's presence info.
-   * @private
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service presence
-   */
+  * @name getServicePresence
+  * @summary Retrieve a service / instance's presence info.
+  * @private
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with service presence
+  */
   _getServicePresence(name) {
     if (name === undefined) {
       name = this._getServiceName();
@@ -1041,13 +1037,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getServiceHealth
-   * @summary Retrieve the health status of an instance service.
-   * @private
-   * @param {string} name - name of instance service.
-   * @description If not specified then the current instance is assumed. - note service name is case insensitive.
-   * @return {promise} promise - a promise resolving to the instance's health info
-   */
+  * @name _getServiceHealth
+  * @summary Retrieve the health status of an instance service.
+  * @private
+  * @param {string} name - name of instance service.
+  * @description If not specified then the current instance is assumed. - note service name is case insensitive.
+  * @return {promise} promise - a promise resolving to the instance's health info
+  */
   _getServiceHealth(name) {
     if (name === undefined && !this.isService) {
       let err = new Error('getServiceHealth() failed. Cant get health log since this machine isn\'t a instance.');
@@ -1089,31 +1085,31 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getInstanceID
-   * @summary Return the instance id for this process
-   * @return {number} id - instanceID
-   */
+  * @name _getInstanceID
+  * @summary Return the instance id for this process
+  * @return {number} id - instanceID
+  */
   _getInstanceID() {
     return this.instanceID;
   }
 
   /**
-   * @name _getInstanceVersion
-   * @summary Return the version of this instance
-   * @return {number} version - instance version
-   */
+  * @name _getInstanceVersion
+  * @summary Return the version of this instance
+  * @return {number} version - instance version
+  */
   _getInstanceVersion() {
     return this.serviceVersion;
   }
 
   /**
-   * @name _getServiceHealthLog
-   * @summary Get this service's health log.
-   * @private
-   * @throws Throws an error if this machine isn't a instance
-   * @param {string} name - name of instance service. If not specified then the current instance is assumed.
-   * @return {promise} promise - resolves to log entries
-   */
+  * @name _getServiceHealthLog
+  * @summary Get this service's health log.
+  * @private
+  * @throws Throws an error if this machine isn't a instance
+  * @param {string} name - name of instance service. If not specified then the current instance is assumed.
+  * @return {promise} promise - resolves to log entries
+  */
   _getServiceHealthLog(name) {
     if (name === undefined && !this.isService) {
       let err = new Error('getServiceHealthLog() failed. Can\'t get health log since this machine isn\'t an instance.');
@@ -1152,11 +1148,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getServiceHealthAll
-   * @summary Retrieve the health status of all instance services.
-   * @private
-   * @return {promise} promise - resolves with an array of objects containing instance health information.
-   */
+  * @name _getServiceHealthAll
+  * @summary Retrieve the health status of all instance services.
+  * @private
+  * @return {promise} promise - resolves with an array of objects containing instance health information.
+  */
   _getServiceHealthAll() {
     return new Promise((resolve, reject) => {
       if (!this.redisdb) {
@@ -1192,13 +1188,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _chooseServiceInstance
-   * @summary Choose an instance from a list of service instances.
-   * @private
-   * @param {array} instanceList - array list of service instances
-   * @param {string} defaultInstance - default instance
-   * @return {object} promise - resolved or rejected
-   */
+  * @name _chooseServiceInstance
+  * @summary Choose an instance from a list of service instances.
+  * @private
+  * @param {array} instanceList - array list of service instances
+  * @param {string} defaultInstance - default instance
+  * @return {object} promise - resolved or rejected
+  */
   _chooseServiceInstance(instanceList, defaultInstance) {
     return new Promise((resolve, reject) => {
       let instance;
@@ -1230,17 +1226,17 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _tryAPIRequest
-   * @summary Attempt an API request to a hydra service.
-   * @description
-   * @param {array} instanceList - array of service instance objects
-   * @param {object} parsedRoute - parsed route
-   * @param {object} umfmsg - UMF message
-   * @param {function} resolve - promise resolve function
-   * @param {function} reject - promise reject function
-   * @param {object} sendOpts - serverResponse.send options
-   * @return {undefined}
-   */
+  * @name _tryAPIRequest
+  * @summary Attempt an API request to a hydra service.
+  * @description
+  * @param {array} instanceList - array of service instance objects
+  * @param {object} parsedRoute - parsed route
+  * @param {object} umfmsg - UMF message
+  * @param {function} resolve - promise resolve function
+  * @param {function} reject - promise reject function
+  * @param {object} sendOpts - serverResponse.send options
+  * @return {undefined}
+  */
   _tryAPIRequest(instanceList, parsedRoute, umfmsg, resolve, reject, sendOpts) {
     let instance;
 
@@ -1312,17 +1308,17 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _makeAPIRequest
-   * @summary Makes an API request to a hydra service.
-   * @description If the service isn't present and the message object has its
-   *              message.body.fallbackToQueue value set to true, then the
-   *              message will be sent to the services message queue.
-   * @param {object} message - UMF formatted message
-   * @param {object} sendOpts - serverResponse.send options
-   * @return {promise} promise - response from API in resolved promise or
-   *                   error in rejected promise.
-   */
-  _makeAPIRequest(message, sendOpts = {}) {
+  * @name _makeAPIRequest
+  * @summary Makes an API request to a hydra service.
+  * @description If the service isn't present and the message object has its
+  *              message.body.fallbackToQueue value set to true, then the
+  *              message will be sent to the services message queue.
+  * @param {object} message - UMF formatted message
+  * @param {object} sendOpts - serverResponse.send options
+  * @return {promise} promise - response from API in resolved promise or
+  *                   error in rejected promise.
+  */
+  _makeAPIRequest(message, sendOpts = { }) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1363,12 +1359,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _sendMessageThroughChannel
-   * @summary Sends a message to a Redis pubsub channel
-   * @param {string} channel - channel name
-   * @param {object} message - UMF formatted message object
-   * @return {undefined}
-   */
+  * @name _sendMessageThroughChannel
+  * @summary Sends a message to a Redis pubsub channel
+  * @param {string} channel - channel name
+  * @param {object} message - UMF formatted message object
+  * @return {undefined}
+  */
   _sendMessageThroughChannel(channel, message) {
     let messageChannel;
     let chash = Utils.stringHash(channel);
@@ -1386,12 +1382,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name sendMessage
-   * @summary Sends a message to an instances of a hydra service.
-   * @param {object} message - UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                  HTTP error in resolve() if something bad happened
-   */
+  * @name sendMessage
+  * @summary Sends a message to an instances of a hydra service.
+  * @param {object} message - UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                  HTTP error in resolve() if something bad happened
+  */
   _sendMessage(message) {
     return new Promise((resolve, _reject) => {
       let {
@@ -1435,13 +1431,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _sendReplyMessage
-   * @summary Sends a reply message based on the original message received.
-   * @param {object} originalMessage - UMF formatted message object
-   * @param {object} messageResponse - UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
-   */
+  * @name _sendReplyMessage
+  * @summary Sends a reply message based on the original message received.
+  * @param {object} originalMessage - UMF formatted message object
+  * @param {object} messageResponse - UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                   error in rejected promise.
+  */
   _sendReplyMessage(originalMessage, messageResponse) {
     let longOriginalMessage = UMFMessage
       .createMessage(originalMessage)
@@ -1464,12 +1460,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name sendBroadcastMessage
-   * @summary Sends a message to all present instances of a hydra service.
-   * @param {object} message - UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
-   */
+  * @name sendBroadcastMessage
+  * @summary Sends a message to all present instances of a hydra service.
+  * @param {object} message - UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                   error in rejected promise.
+  */
   _sendBroadcastMessage(message) {
     return new Promise((resolve, _reject) => {
       let {
@@ -1499,11 +1495,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _queueMessage
-   * @summary Queue a message
-   * @param {object} message - UMF message to queue
-   * @return {promise} promise - resolving to the message that was queued or a rejection.
-   */
+  * @name _queueMessage
+  * @summary Queue a message
+  * @param {object} message - UMF message to queue
+  * @return {promise} promise - resolving to the message that was queued or a rejection.
+  */
   _queueMessage(message) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
@@ -1530,11 +1526,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getQueuedMessage
-   * @summary retrieve a queued message
-   * @param {string} serviceName who's queue might provide a message
-   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-   */
+  * @name _getQueuedMessage
+  * @summary retrieve a queued message
+  * @param {string} serviceName who's queue might provide a message
+  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+  */
   _getQueuedMessage(serviceName) {
     return new Promise((resolve, reject) => {
       this.redisdb.rpoplpush(`${redisPreKey}:${serviceName}:mqrecieved`, `${redisPreKey}:${serviceName}:mqinprogress`, (err, data) => {
@@ -1549,13 +1545,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _markQueueMessage
-   * @summary Mark a queued message as either completed or not
-   * @param {object} message - message in question
-   * @param {boolean} completed - (true / false)
-   * @param {string} reason - if not completed this is the reason processing failed
-   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-   */
+  * @name _markQueueMessage
+  * @summary Mark a queued message as either completed or not
+  * @param {object} message - message in question
+  * @param {boolean} completed - (true / false)
+  * @param {string} reason - if not completed this is the reason processing failed
+  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+  */
   _markQueueMessage(message, completed, reason) {
     let serviceName = this._getServiceName();
     return new Promise((resolve, reject) => {
@@ -1587,13 +1583,13 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _hasServicePresence
-   * @summary Indicate if a service has presence.
-   * @description Indicates if a service has presence, meaning the
-   *              service is running in at least one node.
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
-   */
+  * @name _hasServicePresence
+  * @summary Indicate if a service has presence.
+  * @description Indicates if a service has presence, meaning the
+  *              service is running in at least one node.
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
+  */
   _hasServicePresence(name) {
     name = name || this._getServiceName();
     return new Promise((resolve, reject) => {
@@ -1606,11 +1602,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getConfig
-   * @summary retrieve a stored configuration file
-   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
-   * @return {promise} promise - resolving to a configuration file in object format
-   */
+  * @name _getConfig
+  * @summary retrieve a stored configuration file
+  * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+  * @return {promise} promise - resolving to a configuration file in object format
+  */
   _getConfig(label) {
     return new Promise((resolve, reject) => {
       let parts = label.split(':');
@@ -1632,12 +1628,12 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _putConfig
-   * @summary store a configuration file
-   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
-   * @param {object} config - configuration object
-   * @return {promise} promise - resolving or rejecting.
-   */
+  * @name _putConfig
+  * @summary store a configuration file
+  * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+  * @param {object} config - configuration object
+  * @return {promise} promise - resolving or rejecting.
+  */
   _putConfig(label, config) {
     return new Promise((resolve, reject) => {
       let parts = label.split(':');
@@ -1657,11 +1653,11 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _listConfig
-   * @summary Return a list of config keys
-   * @param {string} serviceName - name of service
-   * @return {promise} promise - resolving or rejecting.
-   */
+  * @name _listConfig
+  * @summary Return a list of config keys
+  * @param {string} serviceName - name of service
+  * @return {promise} promise - resolving or rejecting.
+  */
   _listConfig(serviceName) {
     return new Promise((resolve, reject) => {
       this.redisdb.hkeys(`${redisPreKey}:${serviceName}:configs`, (err, result) => {
@@ -1682,70 +1678,70 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getClonedRedisClient
-   * @summary get a Redis client connection which points to the same Redis server that hydra is using
-   * @return {object} - Redis Client
-   */
+  * @name _getClonedRedisClient
+  * @summary get a Redis client connection which points to the same Redis server that hydra is using
+  * @return {object} - Redis Client
+  */
   _getClonedRedisClient() {
     return this.redisdb.duplicate();
   }
 
   /**
-   * @name _getUMFMessageHelper
-   * @summary returns UMF object helper
-   * @return {object} helper - UMF helper
-   */
+  * @name _getUMFMessageHelper
+  * @summary returns UMF object helper
+  * @return {object} helper - UMF helper
+  */
   _getUMFMessageHelper() {
     return require('./lib/umfmessage');
   }
 
   /**
-   * @name _getServerRequestHelper
-   * @summary returns ServerRequest helper
-   * @return {object} helper - service request helper
-   */
+  * @name _getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
   _getServerRequestHelper() {
     return require('./lib/server-request');
   }
 
   /**
-   * @name _getServerResponseHelper
-   * @summary returns ServerResponse helper
-   * @return {object} helper - service response helper
-   */
+  * @name _getServerResponseHelper
+  * @summary returns ServerResponse helper
+  * @return {object} helper - service response helper
+  */
   _getServerResponseHelper() {
     return require('./lib/server-response');
   }
 
   /**
-   * @name _getUtilsHelper
-   * @summary returns a utils helper
-   * @return {object} helper - utils helper
-   */
+  * @name _getUtilsHelper
+  * @summary returns a utils helper
+  * @return {object} helper - utils helper
+  */
   _getUtilsHelper() {
     return require('./lib/utils');
   }
 
   /**
-   * @name _getConfigHelper
-   * @summary returns a config helper
-   * @return {object} helper - config helper
-   */
+  * @name _getConfigHelper
+  * @summary returns a config helper
+  * @return {object} helper - config helper
+  */
   _getConfigHelper() {
     return require('./lib/config');
   }
 
   /** **************************************************************
-   *  Hydra private utility functions.
-   * ***************************************************************/
+  *  Hydra private utility functions.
+  * ***************************************************************/
 
   /**
-   * @name _createServerResponseWithReason
-   * @summary Create a server response using an HTTP code and reason
-   * @param {number} httpCode - code using ServerResponse.HTTP_XXX
-   * @param {string} reason - reason description
-   * @return {object} response - response object for use with promise resolve and reject calls
-   */
+  * @name _createServerResponseWithReason
+  * @summary Create a server response using an HTTP code and reason
+  * @param {number} httpCode - code using ServerResponse.HTTP_XXX
+  * @param {string} reason - reason description
+  * @return {object} response - response object for use with promise resolve and reject calls
+  */
   _createServerResponseWithReason(httpCode, reason) {
     return serverResponse.createResponseObject(httpCode, {
       result: {
@@ -1755,17 +1751,17 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _parseServicePortConfig
-   * @summary Parse and process given port data in config
-   * @param {mixed} port - configured port
-   * @return {promise} promise - resolving with unassigned port, rejecting when no free port is found
-   */
+  * @name _parseServicePortConfig
+  * @summary Parse and process given port data in config
+  * @param {mixed} port - configured port
+  * @return {promise} promise - resolving with unassigned port, rejecting when no free port is found
+  */
   _parseServicePortConfig(port) {
     return new Promise((resolve, reject) => {
       // No port given, get unassigned port from standard ranges
       if (typeof port === 'undefined' || !port || port == 0) {
         port = '1024-65535';
-      } else if (!/-|,/.test(port.toString())) {
+      } else if (! /-|,/.test(port.toString())) {
         // Specific port given, skip free port check
         resolve(port.toString());
         return;
@@ -1822,14 +1818,14 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _getUnassignedRandomServicePort
-   * @summary retrieve a free service port in given range
-   * @param {number} min - Minimum port number, included
-   * @param {number} max - Maximum port number, included
-   * @param {function} callback - Callback function when done
-   * @param {array} portsTried - Ports which have been tried
-   * @return {undefined}
-   **/
+  * @name _getUnassignedRandomServicePort
+  * @summary retrieve a free service port in given range
+  * @param {number} min - Minimum port number, included
+  * @param {number} max - Maximum port number, included
+  * @param {function} callback - Callback function when done
+  * @param {array} portsTried - Ports which have been tried
+  * @return {undefined}
+  **/
   _getUnassignedRandomServicePort(min, max, callback, portsTried) {
     const instance = this;
     const host = this.config.serviceIP;
@@ -1849,10 +1845,7 @@ class Hydra extends EventEmitter {
     portsTried.push(port);
 
     const server = require('net').createServer();
-    server.listen({
-      port,
-      host
-    }, () => {
+    server.listen({port, host}, () => {
       server.once('close', () => {
         callback(port);
       });
@@ -1864,33 +1857,33 @@ class Hydra extends EventEmitter {
   }
 
   /**
-   * @name _createUMFMessage
-   * @summary Create a UMF style message.
-   * @description This is a helper function which helps format a UMF style message.
-   *              The caller is responsible for ensuring that required fields such as
-   *              "to", "from" and "body" are provided either before or after using
-   *              this function.
-   * @param {object} message - optional message overrides.
-   * @return {object} message - a UMF formatted message.
-   */
+  * @name _createUMFMessage
+  * @summary Create a UMF style message.
+  * @description This is a helper function which helps format a UMF style message.
+  *              The caller is responsible for ensuring that required fields such as
+  *              "to", "from" and "body" are provided either before or after using
+  *              this function.
+  * @param {object} message - optional message overrides.
+  * @return {object} message - a UMF formatted message.
+  */
   _createUMFMessage(message) {
     return UMFMessage.createMessage(message);
   }
 
   /**
-   * @name _getTimeStamp
-   * @summary Retrieve an ISO 8601 timestamp.
-   * @return {string} timestamp - ISO 8601 timestamp
-   */
+  * @name _getTimeStamp
+  * @summary Retrieve an ISO 8601 timestamp.
+  * @return {string} timestamp - ISO 8601 timestamp
+  */
   _getTimeStamp() {
     return new Date().toISOString();
   }
 
   /**
-   * @name _getParentPackageJSONVersion
-   * @summary Retrieve the version from the host app's package.json file.
-   * @return {string} version - package version
-   */
+  * @name _getParentPackageJSONVersion
+  * @summary Retrieve the version from the host app's package.json file.
+  * @return {string} version - package version
+  */
   _getParentPackageJSONVersion() {
     let version;
     try {
@@ -1916,382 +1909,382 @@ class Hydra extends EventEmitter {
  */
 class IHydra extends Hydra {
   /**
-   * @name constructor
-   */
+  * @name constructor
+  */
   constructor() {
     super();
   }
 
   /**
-   * @name init
-   * @summary Initialize Hydra with config object.
-   * @param {mixed} config - a string with a path to a configuration file or an
-   *                         object containing hydra specific keys/values
-   * @param {boolean} testMode - whether hydra is being started in unit test mode
-   * @return {object} promise - resolving if init success or rejecting otherwise
-   */
+  * @name init
+  * @summary Initialize Hydra with config object.
+  * @param {mixed} config - a string with a path to a configuration file or an
+  *                         object containing hydra specific keys/values
+  * @param {boolean} testMode - whether hydra is being started in unit test mode
+  * @return {object} promise - resolving if init success or rejecting otherwise
+  */
   init(config, testMode = false) {
     return super.init(config, testMode);
   }
 
   /**
-   * @name use
-   * @summary Use plugins
-   * @param {array} plugins - plugins to process
-   * @return {undefined}
-   */
+  * @name use
+  * @summary Use plugins
+  * @param {array} plugins - plugins to process
+  * @return {undefined}
+  */
   use(...plugins) {
     return super.use(...plugins);
   }
 
   /**
-   * @name _shutdown
-   * @summary Shutdown hydra safely.
-   * @return {undefined}
-   */
+  * @name _shutdown
+  * @summary Shutdown hydra safely.
+  * @return {undefined}
+  */
   shutdown() {
     return super._shutdown();
   }
 
   /**
-   * @name registerService
-   * @summary Registers this machine as a Hydra instance.
-   * @description This is an optional call as this module might just be used to monitor and query instances.
-   * @return {object} promise - resolving if registration success or rejecting otherwise
-   */
+  * @name registerService
+  * @summary Registers this machine as a Hydra instance.
+  * @description This is an optional call as this module might just be used to monitor and query instances.
+  * @return {object} promise - resolving if registration success or rejecting otherwise
+  */
   registerService() {
     return super._registerService();
   }
 
   /**
-   * @name getServiceName
-   * @summary Retrieves the service name of the current instance.
-   * @throws Throws an error if this machine isn't a instance.
-   * @return {string} serviceName - returns the service name.
-   */
+  * @name getServiceName
+  * @summary Retrieves the service name of the current instance.
+  * @throws Throws an error if this machine isn't a instance.
+  * @return {string} serviceName - returns the service name.
+  */
   getServiceName() {
     return super._getServiceName();
   }
 
   /**
-   * @name getServices
-   * @summary Retrieve a list of available instance services.
-   * @return {promise} promise - returns a promise which resolves to an array of objects.
-   */
+  * @name getServices
+  * @summary Retrieve a list of available instance services.
+  * @return {promise} promise - returns a promise which resolves to an array of objects.
+  */
   getServices() {
     return super._getServices();
   }
 
   /**
-   * @name getServiceNodes
-   * @summary Retrieve a list of services even if inactive.
-   * @return {promise} promise - returns a promise
-   */
+  * @name getServiceNodes
+  * @summary Retrieve a list of services even if inactive.
+  * @return {promise} promise - returns a promise
+  */
   getServiceNodes() {
     return super._getServiceNodes();
   }
 
   /**
-   * @name findService
-   * @summary Find a service.
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service
-   */
+  * @name findService
+  * @summary Find a service.
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with service
+  */
   findService(name) {
     return super._findService(name);
   }
 
   /**
-   * @name getServicePresence
-   * @summary Retrieve a service / instance's presence info.
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with service presence
-   */
+  * @name getServicePresence
+  * @summary Retrieve a service / instance's presence info.
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with service presence
+  */
   getServicePresence(name) {
     return super._getServicePresence(name);
   }
 
   /**
-   * @name getInstanceID
-   * @summary Return the instance id for this process
-   * @return {number} id - instanceID
-   */
+  * @name getInstanceID
+  * @summary Return the instance id for this process
+  * @return {number} id - instanceID
+  */
   getInstanceID() {
     return super._getInstanceID();
   }
 
   /**
-   * @name getInstanceVersion
-   * @summary Return the version of this instance
-   * @return {number} version - instance version
-   */
+  * @name getInstanceVersion
+  * @summary Return the version of this instance
+  * @return {number} version - instance version
+  */
   getInstanceVersion() {
     return super._getInstanceVersion();
   }
 
   /**
-   * @name getHealth
-   * @summary Retrieve service health info.
-   * @private
-   * @return {object} obj - object containing service health info
-   */
+  * @name getHealth
+  * @summary Retrieve service health info.
+  * @private
+  * @return {object} obj - object containing service health info
+  */
   getHealth() {
     return this._getHealth();
   }
 
   /**
-   * @name sendToHealthLog
-   * @summary Log a message to the service instance's health log queue.
-   * @private
-   * @throws Throws an error if this machine isn't a instance.
-   * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
-   * @param {string} message - message to log
-   * @param {boolean} suppressEmit - false by default. If true then suppress log emit
-   * @return {undefined}
-   */
+  * @name sendToHealthLog
+  * @summary Log a message to the service instance's health log queue.
+  * @private
+  * @throws Throws an error if this machine isn't a instance.
+  * @param {string} type - type of message ('error', 'info', 'debug' or user defined)
+  * @param {string} message - message to log
+  * @param {boolean} suppressEmit - false by default. If true then suppress log emit
+  * @return {undefined}
+  */
   sendToHealthLog(type, message, suppressEmit) {
     this._logMessage(type, message, suppressEmit);
   }
 
   /**
-   * @name getServiceHealthLog
-   * @summary Get this service's health log.
-   * @throws Throws an error if this machine isn't a instance
-   * @param {string} name - name of instance, use getName() if current service is the target.
-   *                        note service name is case insensitive.
-   * @return {promise} promise - resolves to log entries
-   */
+  * @name getServiceHealthLog
+  * @summary Get this service's health log.
+  * @throws Throws an error if this machine isn't a instance
+  * @param {string} name - name of instance, use getName() if current service is the target.
+  *                        note service name is case insensitive.
+  * @return {promise} promise - resolves to log entries
+  */
   getServiceHealthLog(name) {
     return super._getServiceHealthLog(name);
   }
 
   /**
-   * @name getServiceHealthAll
-   * @summary Retrieve the health status of all instance services.
-   * @return {promise} promise - resolves with an array of objects containing instance health information.
-   */
+  * @name getServiceHealthAll
+  * @summary Retrieve the health status of all instance services.
+  * @return {promise} promise - resolves with an array of objects containing instance health information.
+  */
   getServiceHealthAll() {
     return super._getServiceHealthAll();
   }
 
   /**
-   * @name createUMFMessage
-   * @summary Create a UMF style message.
-   * @description This is a helper function which helps format a UMF style message.
-   *              The caller is responsible for ensuring that required fields such as
-   *              "to", "from" and "body" are provided either before or after using
-   *              this function.
-   * @param {object} message - optional message overrides.
-   * @return {object} message - a UMF formatted message.
-   */
+  * @name createUMFMessage
+  * @summary Create a UMF style message.
+  * @description This is a helper function which helps format a UMF style message.
+  *              The caller is responsible for ensuring that required fields such as
+  *              "to", "from" and "body" are provided either before or after using
+  *              this function.
+  * @param {object} message - optional message overrides.
+  * @return {object} message - a UMF formatted message.
+  */
   createUMFMessage(message) {
     return super._createUMFMessage(message);
   }
 
   /**
-   * @name makeAPIRequest
-   * @summary Makes an API request to a hydra service.
-   * @description If the service isn't present and the message object has its
-   *              message.body.fallbackToQueue value set to true, then the
-   *              message will be sent to the services message queue.
-   * @param {object} message - UMF formatted message
-   * @return {promise} promise - response from API in resolved promise or
-   *                   error in rejected promise.
-   */
+  * @name makeAPIRequest
+  * @summary Makes an API request to a hydra service.
+  * @description If the service isn't present and the message object has its
+  *              message.body.fallbackToQueue value set to true, then the
+  *              message will be sent to the services message queue.
+  * @param {object} message - UMF formatted message
+  * @return {promise} promise - response from API in resolved promise or
+  *                   error in rejected promise.
+  */
   makeAPIRequest(message) {
     return super._makeAPIRequest(message);
   }
 
   /**
-   * @name sendMessage
-   * @summary Sends a message to all present instances of a  hydra service.
-   * @param {string | object} message - Plain string or UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
-   */
+  * @name sendMessage
+  * @summary Sends a message to all present instances of a  hydra service.
+  * @param {string | object} message - Plain string or UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                   error in rejected promise.
+  */
   sendMessage(message) {
     return super._sendMessage(message);
   }
 
   /**
-   * @name sendReplyMessage
-   * @summary Sends a reply message based on the original message received.
-   * @param {object} originalMessage - UMF formatted message object
-   * @param {object} messageResponse - UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
-   */
+  * @name sendReplyMessage
+  * @summary Sends a reply message based on the original message received.
+  * @param {object} originalMessage - UMF formatted message object
+  * @param {object} messageResponse - UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                   error in rejected promise.
+  */
   sendReplyMessage(originalMessage, messageResponse) {
     return super._sendReplyMessage(originalMessage, messageResponse);
   }
 
   /**
-   * @name sendBroadcastMessage
-   * @summary Sends a message to all present instances of a  hydra service.
-   * @param {string | object} message - Plain string or UMF formatted message object
-   * @return {object} promise - resolved promise if sent or
-   *                   error in rejected promise.
-   */
+  * @name sendBroadcastMessage
+  * @summary Sends a message to all present instances of a  hydra service.
+  * @param {string | object} message - Plain string or UMF formatted message object
+  * @return {object} promise - resolved promise if sent or
+  *                   error in rejected promise.
+  */
   sendBroadcastMessage(message) {
     return super._sendBroadcastMessage(message);
   }
 
   /**
-   * @name registerRoutes
-   * @summary Register routes
-   * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
-   * @param {array} routes - array of routes
-   * @return {object} Promise - resolving or rejecting
-   */
+  * @name registerRoutes
+  * @summary Register routes
+  * @description Routes must be formatted as UMF To routes. https://github.com/cjus/umf#%20To%20field%20(routing)
+  * @param {array} routes - array of routes
+  * @return {object} Promise - resolving or rejecting
+  */
   registerRoutes(routes) {
     return super._registerRoutes(routes);
   }
 
   /**
-   * @name getAllServiceRoutes
-   * @summary Retrieve all service routes.
-   * @return {object} Promise - resolving to an object with keys and arrays of routes
-   */
+  * @name getAllServiceRoutes
+  * @summary Retrieve all service routes.
+  * @return {object} Promise - resolving to an object with keys and arrays of routes
+  */
   getAllServiceRoutes() {
     return super._getAllServiceRoutes();
   }
 
   /**
-   * @name matchRoute
-   * @summary Matches a route path to a list of registered routes
-   * @private
-   * @param {string} routePath - a URL path to match
-   * @return {boolean} match - true if match, false if not
-   */
+  * @name matchRoute
+  * @summary Matches a route path to a list of registered routes
+  * @private
+  * @param {string} routePath - a URL path to match
+  * @return {boolean} match - true if match, false if not
+  */
   matchRoute(routePath) {
     return super._matchRoute(routePath);
   }
 
   /**
-   * @name queueMessage
-   * @summary Queue a message
-   * @param {object} message - UMF message to queue
-   * @return {promise} promise - resolving to the message that was queued or a rejection.
-   */
+  * @name queueMessage
+  * @summary Queue a message
+  * @param {object} message - UMF message to queue
+  * @return {promise} promise - resolving to the message that was queued or a rejection.
+  */
   queueMessage(message) {
     return super._queueMessage(message);
   }
 
   /**
-   * @name getQueuedMessage
-   * @summary retrieve a queued message
-   * @param {string} serviceName who's queue might provide a message
-   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-   */
+  * @name getQueuedMessage
+  * @summary retrieve a queued message
+  * @param {string} serviceName who's queue might provide a message
+  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+  */
   getQueuedMessage(serviceName) {
     return super._getQueuedMessage(serviceName);
   }
 
   /**
-   * @name markQueueMessage
-   * @summary Mark a queued message as either completed or not
-   * @param {object} message - message in question
-   * @param {boolean} completed - (true / false)
-   * @param {string} reason - if not completed this is the reason processing failed
-   * @return {promise} promise - resolving to the message that was dequeued or a rejection.
-   */
+  * @name markQueueMessage
+  * @summary Mark a queued message as either completed or not
+  * @param {object} message - message in question
+  * @param {boolean} completed - (true / false)
+  * @param {string} reason - if not completed this is the reason processing failed
+  * @return {promise} promise - resolving to the message that was dequeued or a rejection.
+  */
   markQueueMessage(message, completed, reason) {
     return super._markQueueMessage(message, completed, reason);
   }
 
   /**
-   * @name _getConfig
-   * @summary retrieve a stored configuration file
-   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
-   * @return {promise} promise - resolving to a configuration file in object format
-   */
+  * @name _getConfig
+  * @summary retrieve a stored configuration file
+  * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+  * @return {promise} promise - resolving to a configuration file in object format
+  */
   getConfig(label) {
     return super._getConfig(label);
   }
 
   /**
-   * @name _putConfig
-   * @summary store a configuration file
-   * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
-   * @param {object} config - configuration object
-   * @return {promise} promise - resolving or rejecting.
-   */
+  * @name _putConfig
+  * @summary store a configuration file
+  * @param {string} label - service label containing servicename and version: such as myservice:0.0.1
+  * @param {object} config - configuration object
+  * @return {promise} promise - resolving or rejecting.
+  */
   putConfig(label, config) {
     return super._putConfig(label, config);
   }
 
   /**
-   * @name listConfig
-   * @summary Return a list of config keys
-   * @param {string} serviceName - name of service
-   * @return {promise} promise - resolving or rejecting.
-   */
+  * @name listConfig
+  * @summary Return a list of config keys
+  * @param {string} serviceName - name of service
+  * @return {promise} promise - resolving or rejecting.
+  */
   listConfig(serviceName) {
     return super._listConfig(serviceName);
   }
 
   /**
-   * @name hasServicePresence
-   * @summary Indicate if a service has presence.
-   * @description Indicates if a service has presence, meaning the
-   *              service is running in at least one node.
-   * @param {string} name - service name - note service name is case insensitive
-   * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
-   */
+  * @name hasServicePresence
+  * @summary Indicate if a service has presence.
+  * @description Indicates if a service has presence, meaning the
+  *              service is running in at least one node.
+  * @param {string} name - service name - note service name is case insensitive
+  * @return {promise} promise - which resolves with TRUE if presence is found, FALSE otherwise
+  */
   hasServicePresence(name) {
     return super._hasServicePresence(name);
   }
 
   /**
-   * @name getClonedRedisClient
-   * @summary get a Redis client connection which points to the same Redis server that hydra is using
-   * @return {object} - Redis Client
-   */
+  * @name getClonedRedisClient
+  * @summary get a Redis client connection which points to the same Redis server that hydra is using
+  * @return {object} - Redis Client
+  */
   getClonedRedisClient() {
     return super._getClonedRedisClient();
   }
 
   /**
-   * @name getUMFMessageHelper
-   * @summary returns UMF object helper
-   * @return {object} helper - UMF helper
-   */
+  * @name getUMFMessageHelper
+  * @summary returns UMF object helper
+  * @return {object} helper - UMF helper
+  */
   getUMFMessageHelper() {
     return super._getUMFMessageHelper();
   }
 
   /**
-   * @name getServerRequestHelper
-   * @summary returns ServerRequest helper
-   * @return {object} helper - service request helper
-   */
+  * @name getServerRequestHelper
+  * @summary returns ServerRequest helper
+  * @return {object} helper - service request helper
+  */
   getServerRequestHelper() {
     return super._getServerRequestHelper();
   }
 
   /**
-   * @name getServerResponseHelper
-   * @summary returns ServerResponse helper
-   * @return {object} helper - service response helper
-   */
+  * @name getServerResponseHelper
+  * @summary returns ServerResponse helper
+  * @return {object} helper - service response helper
+  */
   getServerResponseHelper() {
     return super._getServerResponseHelper();
   }
 
   /**
-   * @name getUtilsHelper
-   * @summary returns a Utils helper
-   * @return {object} helper - utils helper
-   */
+  * @name getUtilsHelper
+  * @summary returns a Utils helper
+  * @return {object} helper - utils helper
+  */
   getUtilsHelper() {
     return super._getUtilsHelper();
   }
 
   /**
-   * @name getConfigHelper
-   * @summary returns a config helper
-   * @return {object} helper - config helper
-   */
+  * @name getConfigHelper
+  * @summary returns a config helper
+  * @return {object} helper - config helper
+  */
   getConfigHelper() {
     return super._getConfigHelper();
   }
