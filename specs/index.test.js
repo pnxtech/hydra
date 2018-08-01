@@ -403,3 +403,4 @@ describe('Hydra Main', function() {
 * Change back to parent directory to maintain proper state
 */
 process.chdir('..');
+
