@@ -10,10 +10,10 @@ const redisUrl = '127.0.0.1';
 const SECOND = 1000;
 
 /**
- * @name getConfig
- * @summary Get a new copy of a config object
- * @return {undefined}
- */
+* @name getConfig
+* @summary Get a new copy of a config object
+* @return {undefined}
+*/
 function getConfig() {
   return Object.assign({}, {
     'hydra': {
