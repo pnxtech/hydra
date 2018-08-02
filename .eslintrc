@@ -1,6 +1,6 @@
 {
   "plugins": ["mocha"],
-  "extends": ["eslint:recommended", "./node_modules/eslint-config-google/index.js"],
+  "extends": ["eslint:recommended", "google"],
   "parserOptions": {
     "ecmaVersion": 6,
     "ecmaFeatures": {

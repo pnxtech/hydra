@@ -1266,7 +1266,7 @@ class Hydra extends EventEmitter {
               host: instance.ip,
               port: instance.port,
               path: parsedRoute.apiRoute,
-              protocol: (instance.protocol || 'http') + ':',
+              protocol: `${(instance.protocol || 'http')}:`,
               method: parsedRoute.httpMethod.toUpperCase()
             };
             let preHeaders = {};
