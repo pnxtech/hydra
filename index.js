@@ -386,6 +386,7 @@ class Hydra extends EventEmitter {
         Promise.all(promises).then(resolve);
       }
       this.initialized = false;
+      this.instanceID = INSTANCE_ID_NOT_SET;
     });
   }
 
