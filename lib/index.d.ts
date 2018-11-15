@@ -33,7 +33,62 @@ declare namespace Hydra {
   }
 
   // TODO: server-request
+  export class ServerRequest {
+    constructor();
+
+    send(options: {}): Promise<any>;
+  }
+
   // TODO: server-response
+  export class ServerResponse {
+    constructor();
+
+    testMode: boolean;
+    corsEnabled: boolean;
+
+    setTestMode(): void;
+
+    enableCORS(state: boolean): void;
+
+    createResponseObject(httpCode: number, resultPayload: {}): {};
+
+    sendResponse(code: number, res: {}, data: {}): any;
+
+    sendOk(res: {}, data: {}): void;
+
+    sendCreated(res: {}, data: {}): void;
+
+    sendMovedPermanently(res: {}, data: {}): void;
+
+    sendInvalidRequest(res: {}, data: {}): void;
+
+    sendInvalidUserCredentials(res: {}, data: {}): void;
+
+    sendPaymentRequired(res: {}, data: {}): void;
+
+    sendForbidden(res: {}, data: {}): void;
+
+    sendNotFound(res: {}, data: {}): void;
+
+    sendInvalidSession(res: {}, data: {}): void;
+
+    sendRequestFailed(res: {}, data: {}): void;
+
+    sendDataConflict(res: {}, data: {}): void;
+
+    sendTooLarge(res: {}, data: {}): void;
+
+    sendTooManyRequests(res: {}, data: {}): void;
+
+    sendServerError(res: {}, data: {}): void;
+
+    sendInternalError(res: {}, data: {}): void;
+
+    sendMethodNotImplemented(res: {}, data: {}): void;
+
+    sendUnavailableError(res: {}, data: {}): void;
+  }
+
   // TODO: umfmessage
   // TODO: utils
 }
