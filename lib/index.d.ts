@@ -4,10 +4,14 @@ declare namespace Hydra {
   export class Config {
     constructor();
 
-    config: {};
+    config: ConfigProps;
 
     getObject(): {};
     init(cfg: {}): Promise<void>;
+  }
+
+  export interface ConfigProps {
+    a?: number;
   }
 
   export class Cache<T> {
