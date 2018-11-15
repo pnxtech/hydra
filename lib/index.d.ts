@@ -32,14 +32,12 @@ declare namespace Hydra {
     attempt(action: () => Promise<any>): void;
   }
 
-  // TODO: server-request
   export class ServerRequest {
     constructor();
 
     send(options: {}): Promise<any>;
   }
 
-  // TODO: server-response
   export class ServerResponse {
     constructor();
 
@@ -69,6 +67,21 @@ declare namespace Hydra {
     sendUnavailableError(res: {}, data: {}): void;
   }
 
-  // TODO: umfmessage
+  export class UMFMessage {
+    constructor();
+
+    message: {};
+
+    getTimeStamp(): string;
+    createMessageID(): string;
+    createShortMessageID(): string;
+    signMessage(algo: string, sharedSecret: string): void;
+    toJSON(): {};
+    toShort(): {};
+    validate(): boolean;
+    createMessageInstance(message: {}): void;
+    parseRoute(toValue: string): {};
+  }
+
   // TODO: utils
 }
