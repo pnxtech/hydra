@@ -93,7 +93,7 @@ declare namespace Hydra {
     static stringHash(str: string): number;
     static shortID(): string;
     static isUUID4(str: string): void;
-    static shuffleArray(a: [any]): void;
+    static shuffleArray(a: any[]): void;
 
   }
 }
