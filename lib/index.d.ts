@@ -65,6 +65,8 @@ declare namespace Hydra {
     sendInternalError(res: {}, data: {}): void;
     sendMethodNotImplemented(res: {}, data: {}): void;
     sendUnavailableError(res: {}, data: {}): void;
+
+    // TODO: possible enum for response codes
   }
 
   export class UMFMessage {
