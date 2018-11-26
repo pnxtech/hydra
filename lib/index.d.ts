@@ -82,6 +82,16 @@ declare namespace Hydra {
     createMessageInstance(message: {}): void;
     parseRoute(toValue: string): {};
   }
+  
+  export class Utils {
 
-  // TODO: utils
+    static md5Hash(key: string): string;
+    static safeJSONStringify(obj: {}): string;
+    static safeJSONParse(str: string): {};
+    static stringHash(str: string): number;
+    static shortID(): string;
+    static isUUID4(str: string): void;
+    static shuffleArray(a: [any]): void;
+
+  }
 }
