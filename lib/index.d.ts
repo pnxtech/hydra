@@ -84,7 +84,7 @@ declare namespace Hydra {
     createMessageInstance(message: {}): void;
     parseRoute(toValue: string): {};
   }
-  
+
   export class Utils {
 
     static md5Hash(key: string): string;
@@ -97,3 +97,5 @@ declare namespace Hydra {
 
   }
 }
+
+export = Hydra;
