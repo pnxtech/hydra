@@ -1,6 +1,5 @@
 declare namespace Hydra {
 
-  // TODO: make a typed ConfigProps object for config
   export class Config {
     constructor();
 
@@ -23,7 +22,7 @@ declare namespace Hydra {
     get(key: string): T;
   }
 
-  // TODO: make a typed OptionsProps object for options
+  // TODO: create an interface named OptionsProps for options
   export class RedisConnection {
     constructor(redisConfig: {}, defaultRedisDb: number, testMode: boolean);
 
@@ -44,6 +43,7 @@ declare namespace Hydra {
     testMode: boolean;
     corsEnabled: boolean;
 
+    // TODO: possible enum for response codes
     setTestMode(): void;
     enableCORS(state: boolean): void;
     createResponseObject(httpCode: number, resultPayload: {}): {};
@@ -65,8 +65,6 @@ declare namespace Hydra {
     sendInternalError(res: {}, data: {}): void;
     sendMethodNotImplemented(res: {}, data: {}): void;
     sendUnavailableError(res: {}, data: {}): void;
-
-    // TODO: possible enum for response codes
   }
 
   export class UMFMessage {
@@ -94,7 +92,6 @@ declare namespace Hydra {
     static shortID(): string;
     static isUUID4(str: string): void;
     static shuffleArray(a: any[]): void;
-
   }
 }
 
