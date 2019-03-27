@@ -1680,11 +1680,12 @@ class Hydra extends EventEmitter {
   /**
   * @name _getClonedRedisClient
   * @summary get a Redis client connection which points to the same Redis server that hydra is using
-  * @param {object} options - override options from original createClient call
+  * @param {object} [options] - override options from original createClient call
+  * @param {function} [callback] - callback for async connect
   * @return {object} - Redis Client
   */
-  _getClonedRedisClient(options) {
-    return this.redisdb.duplicate(options);
+  _getClonedRedisClient(options, callback) {
+    return this.redisdb.duplicate(options, callback);
   }
 
   /**
