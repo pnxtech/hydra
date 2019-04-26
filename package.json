@@ -24,6 +24,10 @@
     "url": "git+https://github.com/flywheelsports/hydra.git"
   },
   "dependencies": {
+    "@types/bluebird-global": "^3.5.11",
+    "@types/ioredis": "^4.0.10",
+    "@types/redis": "^2.8.12",
+    "@types/route-parser": "^0.1.2",
     "bluebird": "3.5.1",
     "debug": "2.6.9",
     "redis": "2.8.0",
