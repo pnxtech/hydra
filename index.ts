@@ -1362,7 +1362,7 @@ class Hydra extends EventEmitter implements Types.IHydra {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  public makeAPIRequest(message: object, sendOpts: object = { }): Promise<any> {
+  public makeAPIRequest(message: object, sendOpts?: Types.SendOptions): Promise<any> {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1393,7 +1393,7 @@ class Hydra extends EventEmitter implements Types.IHydra {
             resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVICE_UNAVAILABLE, `Unavailable ${parsedRoute.serviceName} instances`));
             return;
           }
-          this._tryAPIRequest(instances, parsedRoute, umfmsg, resolve, reject, sendOpts);
+          this._tryAPIRequest(instances, parsedRoute, umfmsg, resolve, reject, sendOpts || {});
           return 0;
         })
         .catch((err) => {

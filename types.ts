@@ -1,22 +1,21 @@
-
-// import * as IORedis from 'ioredis';
-// export interface IRedis extends IORedis.Redis {};
-// export type RedisOptions = IORedis.RedisOptions | string;
-
 import {RedisClient, Callback, ClientOpts} from 'redis';
+import * as Route from 'route-parser';
+
 export interface IRedis extends RedisClient {
   closing: boolean;
   quitAsync(): Promise<void>;
 };
 export interface IRedisOptions extends ClientOpts {};
 
-import * as Route from 'route-parser';
+// import * as IORedis from 'ioredis';
+// export interface IRedis extends IORedis.Redis {};
+// export type RedisOptions = IORedis.RedisOptions | string;
 
-export interface ServiceConfig {
+export type ServiceConfig = {
   environment: string;
   hydra: HydraConfig;
 };
-export interface ServiceDetails {
+export type ServiceDetails = {
   serviceName: string;
   serviceVersion?: string;
   serviceIP?: string;
@@ -30,14 +29,14 @@ export interface HydraConfig extends ServiceDetails {
   plugins?: { [name: string]: Object };
   redis: IRedisOptions;
 };
-export interface ShortFormUMFMessage {
+
+export type ShortFormUMFMessage = {
   mid: string;
   bdy: any;
   to: string;
   frm: string;
   ver: string;
   ts: string;
-
   aut?: string;
   for?: string;
   fwd?: string;
@@ -49,14 +48,13 @@ export interface ShortFormUMFMessage {
   ttl?: string;
   typ?: string;
 };
-export interface LongFormUMFMessage {
+export type LongFormUMFMessage = {
   mid: string;
   body: any;
   to: string;
   from: string;
   version: string;
   timestamp: string;
-
   authorization?: string;
   for?: string;
   forward?: string;
@@ -69,6 +67,7 @@ export interface LongFormUMFMessage {
   type?: string;
 };
 export type UMF = LongFormUMFMessage & ShortFormUMFMessage;
+
 export interface IHydra {
   instanceID: string;
   mcMessageChannelClient: IRedis;
@@ -110,7 +109,7 @@ export interface IHydra {
   sendToHealthLog(type: string, message: string, suppressEmit?: boolean): void;
   getServiceHealthLog(name: string): Promise<Array<Object>>;
   getServiceHealthAll(): Promise<Array<Object>>;
-  makeAPIRequest(message: UMF, sendOpts?: Object): Promise<Object>;
+  makeAPIRequest(message: UMF, sendOpts?: SendOptions): Promise<Object>;
   sendMessage(message: UMF): Promise<void>;
   sendReplyMessage(originalMessage: UMF, messageResponse: UMF): Promise<void>;
   sendBroadcastMessage(message: UMF): Promise<void>;
