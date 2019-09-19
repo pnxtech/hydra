@@ -1,0 +1,58 @@
+{
+  "name": "hydra",
+  "version": "1.7.1",
+  "license": "MIT",
+  "author": "Carlos Justiniano",
+  "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
+  "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
+  "keywords": [
+    "hydra",
+    "hydra-core",
+    "microservice"
+  ],
+  "main": "index.js",
+  "analyze": false,
+  "engines": {
+    "node": ">=6.2.1"
+  },
+  "scripts": {
+    "test": "mocha specs --reporter spec",
+    "coverage": "nyc --reporter=text ./node_modules/mocha/bin/_mocha specs --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flywheelsports/hydra.git"
+  },
+  "dependencies": {
+    "bluebird": "3.5.1",
+    "debug": "2.6.9",
+    "ioredis": "^4.14.1",
+    "redis": "2.8.0",
+    "redis-url": "1.2.1",
+    "route-parser": "0.0.5",
+    "umf": "1.4.6",
+    "uuid": "3.2.1"
+  },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "eslint": "3.19.0",
+    "eslint-config-google": "0.7.1",
+    "eslint-plugin-mocha": "4.9.0",
+    "mocha": "3.3.0",
+    "nyc": "11.4.1",
+    "redis-mock": "0.17.0"
+  },
+  "nyc": {
+    "exclude": [
+      "specs/*.js",
+      "specs/helpers/*.js"
+    ]
+  },
+  "bin": {
+    "hydra": "index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/flywheelsports/hydra/issues"
+  },
+  "homepage": "https://github.com/flywheelsports/hydra#readme"
+}

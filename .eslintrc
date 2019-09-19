@@ -1,0 +1,106 @@
+{
+  "plugins": ["mocha"],
+  "extends": ["eslint:recommended", "google"],
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+  "rules": {
+    "valid-jsdoc": [ 2, {
+      "requireReturn": true,
+      "requireReturnDescription": true,
+      "requireParamDescription": true,
+      "prefer": {
+        "return": "return"
+      }
+    }],
+    "comma-dangle": 0,
+    "curly": 2,
+    "semi": [2, "always"],
+    "no-console": 0,
+    "no-debugger": 2,
+    "no-extra-semi": 2,
+    "no-constant-condition": 2,
+    "no-alert": 2,
+    "one-var-declaration-per-line": [2, "always"],
+    "operator-linebreak": [
+      2,
+      "after"
+    ],
+    "max-len": [
+      2,
+      240
+    ],
+    "indent": [
+      2,
+      2,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "quotes": [
+      2,
+      "single",
+      {
+        "avoidEscape": true
+      }
+    ],
+    "no-multi-str": 2,
+    "no-mixed-spaces-and-tabs": 2,
+    "no-trailing-spaces": 2,
+    "space-unary-ops": [
+      2,
+      {
+        "nonwords": false,
+        "overrides": {}
+      }
+    ],
+    "one-var": [
+      2,
+      {
+        "uninitialized": "always",
+        "initialized": "never"
+      }
+    ],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "keyword-spacing": [
+      2,
+      {}
+    ],
+    "space-infix-ops": 2,
+    "space-before-blocks": [
+      2,
+      "always"
+    ],
+    "eol-last": 2,
+    "space-in-parens": [
+      2,
+      "never"
+    ],
+    "no-multiple-empty-lines": 2,
+    "no-multi-spaces": 2,
+    "key-spacing": [
+      2,
+      {
+        "beforeColon": false,
+        "afterColon": true
+      }
+    ]
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true,
+    "mocha": true
+  },
+  "globals": {
+    "-": 0,
+    "define": true,
+    "expect": true,
+    "it": true,
+    "require": true
+  }
+}
