@@ -880,10 +880,9 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(err);
             } else {
-              let serviceList = Utils.ioToRedisMultiAdapter(result)
-                .map((service) => {
-                  return Utils.safeJSONParse(service);
-                });
+              let serviceList = Utils.ioToRedisMultiAdapter(result).map((service) => {
+                return Utils.safeJSONParse(service);
+              });
               resolve(serviceList);
             }
           });
@@ -991,16 +990,15 @@ class Hydra extends EventEmitter {
               reject(err);
             } else {
               let instanceList = [];
-              Utils.ioToRedisMultiAdapter(result)
-                .forEach((instance) => {
-                  if (instance) {
-                    let instanceObj = Utils.safeJSONParse(instance);
-                    if (instanceObj) {
-                      instanceObj.updatedOnTS = (new Date(instanceObj.updatedOn).getTime());
-                    }
-                    instanceList.push(instanceObj);
+              Utils.ioToRedisMultiAdapter(result).forEach((instance) => {
+                if (instance) {
+                  let instanceObj = Utils.safeJSONParse(instance);
+                  if (instanceObj) {
+                    instanceObj.updatedOnTS = (new Date(instanceObj.updatedOn).getTime());
                   }
-                });
+                  instanceList.push(instanceObj);
+                }
+              });
               if (instanceList.length) {
                 Utils.shuffleArray(instanceList);
                 this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
@@ -1077,10 +1075,9 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(err);
             } else {
-              let instanceList = Utils.ioToRedisMultiAdapter(result)
-                .map((instance) => {
-                  return Utils.safeJSONParse(instance);
-                });
+              let instanceList = Utils.ioToRedisMultiAdapter(result).map((instance) => {
+                return Utils.safeJSONParse(instance);
+              });
               this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
               resolve(instanceList);
             }
