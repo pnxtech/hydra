@@ -203,7 +203,7 @@ class Hydra extends EventEmitter {
       }
 
       if (partialConfig && process.env.HYDRA_REDIS_URL) {
-        this._connectToRedis({ redis: { url: process.env.HYDRA_REDIS_URL } })
+        this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
               reject(new Error('No Redis connection'));
@@ -301,7 +301,7 @@ class Hydra extends EventEmitter {
                   let interfaceMask = segments[1];
                   Object.keys(interfaces).
                     forEach((itf) => {
-                      interfaces[itf].forEach((interfaceRecord) => {
+                      interfaces[itf].forEach((interfaceRecord)=>{
                         if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
                           this.config.serviceIP = interfaceRecord.address;
                         }
@@ -315,7 +315,7 @@ class Hydra extends EventEmitter {
                 let firstSelected = false;
                 Object.keys(interfaces).
                   forEach((itf) => {
-                    interfaces[itf].forEach((interfaceRecord) => {
+                    interfaces[itf].forEach((interfaceRecord)=>{
                       if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
                         this.config.serviceIP = interfaceRecord.address;
                         firstSelected = true;
@@ -1322,7 +1322,7 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message, sendOpts = {}) {
+  _makeAPIRequest(message, sendOpts = { }) {
     return new Promise((resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
@@ -1851,7 +1851,7 @@ class Hydra extends EventEmitter {
     portsTried.push(port);
 
     const server = require('net').createServer();
-    server.listen({ port, host }, () => {
+    server.listen({port, host}, () => {
       server.once('close', () => {
         callback(port);
       });
@@ -2098,7 +2098,7 @@ class IHydra extends Hydra {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  makeAPIRequest(message, sendOpts = {}) {
+  makeAPIRequest(message, sendOpts = { }) {
     return super._makeAPIRequest(message, sendOpts);
   }
 
