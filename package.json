@@ -1,15 +1,9 @@
 {
-  "name": "hydra",
-  "version": "1.7.1",
+  "name": "hydra-promoted-core",
+  "version": "1.0.1",
   "license": "MIT",
-  "author": "Carlos Justiniano",
-  "contributors": "https://github.com/flywheelsports/hydra/graphs/contributors",
-  "description": "Hydra is a NodeJS light-weight library for building distributed computing applications such as microservices",
-  "keywords": [
-    "hydra",
-    "hydra-core",
-    "microservice"
-  ],
+  "author": "Abdallah Gamal",
+  "description": "test hydra new redis client package",
   "main": "index.js",
   "analyze": false,
   "engines": {
@@ -18,10 +12,6 @@
   "scripts": {
     "test": "mocha specs --reporter spec",
     "coverage": "nyc --reporter=text ./node_modules/mocha/bin/_mocha specs --reporter spec"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/flywheelsports/hydra.git"
   },
   "dependencies": {
     "bluebird": "3.5.1",
