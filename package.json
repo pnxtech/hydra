@@ -19,6 +19,8 @@
     "ioredis": "^4.14.1",
     "redis": "2.8.0",
     "redis-url": "1.2.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.5",
     "route-parser": "0.0.5",
     "umf": "1.4.6",
     "uuid": "3.2.1"
