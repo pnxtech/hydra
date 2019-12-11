@@ -366,14 +366,14 @@ class Hydra extends EventEmitter {
           .exec();
 
         if (this.mcMessageChannelClient) {
-          promises.push(this.mcMessageChannelClient.quitAsync());
+          promises.push(Utils.quitOrQuit(this.mcMessageChannelClient));
         }
         if (this.mcDirectMessageChannelClient) {
-          promises.push(this.mcDirectMessageChannelClient.quitAsync());
+          promises.push(Utils.quitOrQuit(this.mcMessageChannelClient));
         }
       }
       Object.keys(this.messageChannelPool).forEach((keyname) => {
-        promises.push(this.messageChannelPool[keyname].quitAsync());
+        promises.push(Utils.quitOrQuit(this.messageChannelPool[keyname]));
       });
       if (this.redisdb) {
         this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
