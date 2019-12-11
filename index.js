@@ -10,6 +10,7 @@ Promise.series = (iterable, action) => {
   );
 };
 
+const rp = require('request-promise');
 const EventEmitter = require('events');
 const util = require('util');
 const uuid = require('uuid');
@@ -203,7 +204,7 @@ class Hydra extends EventEmitter {
       }
 
       if (partialConfig && process.env.HYDRA_REDIS_URL) {
-        this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
+        this._connectToRedis({ redis: { url: process.env.HYDRA_REDIS_URL } })
           .then(() => {
             if (!this.redisdb) {
               reject(new Error('No Redis connection'));
@@ -301,7 +302,7 @@ class Hydra extends EventEmitter {
                   let interfaceMask = segments[1];
                   Object.keys(interfaces).
                     forEach((itf) => {
-                      interfaces[itf].forEach((interfaceRecord)=>{
+                      interfaces[itf].forEach((interfaceRecord) => {
                         if (itf === interfaceName && interfaceRecord.netmask === interfaceMask && interfaceRecord.family === 'IPv4') {
                           this.config.serviceIP = interfaceRecord.address;
                         }
@@ -315,7 +316,7 @@ class Hydra extends EventEmitter {
                 let firstSelected = false;
                 Object.keys(interfaces).
                   forEach((itf) => {
-                    interfaces[itf].forEach((interfaceRecord)=>{
+                    interfaces[itf].forEach((interfaceRecord) => {
                       if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address !== '127.0.0.1') {
                         this.config.serviceIP = interfaceRecord.address;
                         firstSelected = true;
@@ -359,21 +360,27 @@ class Hydra extends EventEmitter {
 
       const promises = [];
       if (!this.testMode) {
-        this._logMessage('error', 'Service is shutting down.');
-        this.redisdb.batch()
+
+        this._logMessage('error', 'Service is shutting down. kokoko is shuttingdown');
+        this.redisdb[Utils.getBatchOrPipeline(this.redisdb)]()
           .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
           .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
           .exec();
 
         if (this.mcMessageChannelClient) {
-          promises.push(this.mcMessageChannelClient.quitAsync());
+          promises.push(this.mcMessageChannelClient.quit());
+          // promises.push(Utils.quitOrQuit(this.mcMessageChannelClient));
         }
+
         if (this.mcDirectMessageChannelClient) {
-          promises.push(this.mcDirectMessageChannelClient.quitAsync());
+          // promises.push(this.mcMessageChannelClient.quit());
+          // promises.push(Utils.quitOrQuit(this.mcMessageChannelClient));
         }
+
       }
       Object.keys(this.messageChannelPool).forEach((keyname) => {
-        promises.push(this.messageChannelPool[keyname].quitAsync());
+        this.messageChannelPool[keyname].quit();
+        // promises.push(Utils.quitOrQuit(this.messageChannelPool[keyname]));
       });
       if (this.redisdb) {
         this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
@@ -752,7 +759,7 @@ class Hydra extends EventEmitter {
       hostName: this.hostName
     });
     if (entry && !this.redisdb.closing) {
-      let cmd = (this.testMode) ? 'multi' : 'batch';
+      let cmd = (this.testMode) ? 'multi' : Utils.getBatchOrPipeline(this.redisdb);
       this.redisdb[cmd]()
         .setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, KEY_EXPIRATION_TTL, this.instanceID)
         .hset(`${redisPreKey}:nodes`, this.instanceID, entry)
@@ -770,7 +777,7 @@ class Hydra extends EventEmitter {
     let entry = Object.assign({
       updatedOn: this._getTimeStamp()
     }, this._getHealth());
-    let cmd = (this.testMode) ? 'multi' : 'batch';
+    let cmd = (this.testMode) ? 'multi' : Utils.getBatchOrPipeline(this.redisdb);
     this.redisdb[cmd]()
       .setex(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL, Utils.safeJSONStringify(entry))
       .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
@@ -880,7 +887,7 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(err);
             } else {
-              let serviceList = result.map((service) => {
+              let serviceList = Utils.ioToRedisMultiAdapter(result).map((service) => {
                 return Utils.safeJSONParse(service);
               });
               resolve(serviceList);
@@ -990,7 +997,7 @@ class Hydra extends EventEmitter {
               reject(err);
             } else {
               let instanceList = [];
-              result.forEach((instance) => {
+              Utils.ioToRedisMultiAdapter(result).forEach((instance) => {
                 if (instance) {
                   let instanceObj = Utils.safeJSONParse(instance);
                   if (instanceObj) {
@@ -1075,7 +1082,7 @@ class Hydra extends EventEmitter {
             if (err) {
               reject(err);
             } else {
-              let instanceList = result.map((instance) => {
+              let instanceList = Utils.ioToRedisMultiAdapter(result).map((instance) => {
                 return Utils.safeJSONParse(instance);
               });
               this.internalCache.put(cacheKey, instanceList, KEY_EXPIRATION_TTL);
@@ -1137,6 +1144,7 @@ class Hydra extends EventEmitter {
             } else {
               let response = [];
               if (result && result.length > 0) {
+                result = Utils.ioToRedisMultiAdapter(result);
                 result = result[0];
                 result.forEach((entry) => {
                   response.push(Utils.safeJSONParse(entry));
@@ -1318,8 +1326,8 @@ class Hydra extends EventEmitter {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  _makeAPIRequest(message, sendOpts = { }) {
-    return new Promise((resolve, reject) => {
+  _makeAPIRequest(message, sendOpts = {}) {
+    return new Promise(async (resolve, reject) => {
       let umfmsg = UMFMessage.createMessage(message);
       if (!umfmsg.validate()) {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, UMF_INVALID_MESSAGE));
@@ -1340,6 +1348,36 @@ class Hydra extends EventEmitter {
       if (parsedRoute.apiRoute === '') {
         resolve(this._createServerResponseWithReason(ServerResponse.HTTP_BAD_REQUEST, 'message `to` field does not specify a valid route'));
         return;
+      }
+
+      // case this was an external route then dont check the Service presence and just make the request
+      if (sendOpts.isExternal) {
+        try {
+          let response = await rp(`${parsedRoute.serviceName}${parsedRoute.apiRoute}`, {
+            timeout: sendOpts.timeout,
+            method: parsedRoute.httpMethod,
+            headers: umfmsg.message.headers,
+            body: parsedRoute.httpMethod === 'get' ? null : umfmsg.message.body,
+            resolveWithFullResponse: true
+          });
+
+          let body;
+          // handling parse error if not json just leave it as it is 
+          try {
+            body = JSON.parse(response.body);
+          } catch (err) { }
+
+          let serverResponse = new ServerResponse();
+          response = serverResponse.createResponseObject(response.statusCode, {
+            result: body,
+            headers: response.headers
+          });
+
+          resolve(response);
+          return 0;
+        } catch (err) {
+          resolve(this._createServerResponseWithReason(ServerResponse.HTTP_SERVER_ERROR, err.message));
+        }
       }
 
       this._getServicePresence(parsedRoute.serviceName)
@@ -1847,7 +1885,7 @@ class Hydra extends EventEmitter {
     portsTried.push(port);
 
     const server = require('net').createServer();
-    server.listen({port, host}, () => {
+    server.listen({ port, host }, () => {
       server.once('close', () => {
         callback(port);
       });
@@ -2094,7 +2132,7 @@ class IHydra extends Hydra {
    * @return {promise} promise - response from API in resolved promise or
    *                   error in rejected promise.
    */
-  makeAPIRequest(message, sendOpts = { }) {
+  makeAPIRequest(message, sendOpts = {}) {
     return super._makeAPIRequest(message, sendOpts);
   }
 
