@@ -4,7 +4,7 @@
 
 Hydra is a NodeJS package which facilitates building distributed applications such as Microservices.
 
-Hydra offers features such as service discovery, distributed messaging, message load balancing, logging, presence, and health monitoring. It was announced at [EmpireNode 2016](http://empirenode.org/).
+Hydra offers features such as service discovery, distributed messaging, message load balancing, logging, presence, and health monitoring. It was announced at [EmpireNode 2016](http://www.dev-conferences.com/en/talks/node-microservices-using-hydra-carlos-justiniano/1536).
 
 Install the latest stable version via `npm install hydra --save`
 
