@@ -202,7 +202,7 @@ class Hydra extends EventEmitter {
         return;
       }
 
-      if (partialConfig && process.env.HYDRA_REDIS_URL) {
+      if (partialConfig && process.env.HYDRA_REDIS_URL && process.env.HYDRA_SERVICE) {
         this._connectToRedis({redis: {url: process.env.HYDRA_REDIS_URL}})
           .then(() => {
             if (!this.redisdb) {
