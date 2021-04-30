@@ -1373,7 +1373,7 @@ class Hydra extends EventEmitter {
     if (this.publishChannel) {
       let msg = UMFMessage.createMessage(message);
       let strMessage = Utils.safeJSONStringify(msg.toShort());
-      messageChannel.publish(channel, strMessage);
+      this.publishChannel.publish(channel, strMessage);
     }
   }
 
