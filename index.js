@@ -36,6 +36,7 @@ const KEY_EXPIRATION_TTL = 3; // three seconds
 const KEYS_PER_SCAN = '100';
 const UMF_INVALID_MESSAGE = 'UMF message requires "to", "from" and "body" fields';
 const INSTANCE_ID_NOT_SET = 'not set';
+
 /**
  * @name Hydra
  * @summary Base class for Hydra.
@@ -53,7 +54,7 @@ class Hydra extends EventEmitter {
     this.instanceID = INSTANCE_ID_NOT_SET;
     this.mcMessageChannelClient;
     this.mcDirectMessageChannelClient;
-    this.messageChannelPool = {};
+    this.publishChannel = null;
     this.config = null;
     this.serviceName = '';
     this.serviceDescription = '';
@@ -371,10 +372,10 @@ class Hydra extends EventEmitter {
         if (this.mcDirectMessageChannelClient) {
           promises.push(this.mcDirectMessageChannelClient.quitAsync());
         }
+        if (this.publishChannel) {
+          promises.push(this.publishChannel.quitAsync());
+        }
       }
-      Object.keys(this.messageChannelPool).forEach((keyname) => {
-        promises.push(this.messageChannelPool[keyname].quitAsync());
-      });
       if (this.redisdb) {
         this.redisdb.del(`${redisPreKey}:${this.serviceName}:${this.instanceID}:presence`, () => {
           this.redisdb.quit();
@@ -1366,18 +1367,13 @@ class Hydra extends EventEmitter {
    * @return {undefined}
    */
   _sendMessageThroughChannel(channel, message) {
-    let messageChannel;
-    let chash = Utils.stringHash(channel);
-    if (this.messageChannelPool[chash]) {
-      messageChannel = this.messageChannelPool[chash];
-    } else {
-      messageChannel = this.redisdb.duplicate();
-      this.messageChannelPool[chash] = messageChannel;
+    if (!this.publishChannel) {
+      this.publishChannel = this.redisdb.duplicate();
     }
-    if (messageChannel) {
+    if (this.publishChannel) {
       let msg = UMFMessage.createMessage(message);
       let strMessage = Utils.safeJSONStringify(msg.toShort());
-      messageChannel.publish(channel, strMessage);
+      this.publishChannel.publish(channel, strMessage);
     }
   }
 
