@@ -14,6 +14,8 @@ const EventEmitter = require('events');
 const util = require('util');
 const uuid = require('uuid');
 const Route = require('route-parser');
+const net = require('net');
+const dns = require('dns');
 const os = require('os');
 const Utils = require('./lib/utils');
 const UMFMessage = require('./lib/umfmessage');
@@ -269,6 +271,30 @@ class Hydra extends EventEmitter {
           this.config.serviceVersion = this.serviceVersion = this.config.serviceVersion || this._getParentPackageJSONVersion();
 
           /**
+           * Check if serviceIP has a wildcard character.
+           * If so, use the wildcard to mean the IP address pattern up to the wildcard.
+           * Use the pattern to search for an IP address that matches the pattern.
+           * If found, use the first matchin IP address as the serviceIP.
+           * This is useful in docker containers with multiple network interfaces and now way of choosing which one to use.
+           */
+          if (this.config.serviceIP !== '' && this.config.serviceIP.indexOf('*') > -1) {
+            let starPoint = this.config.serviceIP.indexOf('*');
+            let pattern = this.config.serviceIP.substring(0, starPoint);
+            let firstSelected = false;
+            let interfaces = os.networkInterfaces();
+            Object.keys(interfaces).
+              forEach((itf) => {
+                interfaces[itf].forEach((interfaceRecord)=>{
+                  if (!firstSelected && interfaceRecord.family === 'IPv4' && interfaceRecord.address.indexOf(pattern) === 0) {
+                    this.config.serviceIP = interfaceRecord.address;
+                    firstSelected = true;
+                  }
+                });
+              });
+              this._updateInstanceData();
+              ready();
+          }
+          /**
           * Determine network DNS/IP for this service.
           * - First check whether serviceDNS is defined. If so, this is expected to be a DNS entry.
           * - Else check whether serviceIP exists and is not empty ('') and is not an segemented IP
@@ -278,14 +304,12 @@ class Hydra extends EventEmitter {
           * - And final else - the serviceIP is expected to be populated with an actual dotted IP address
           *   or serviceDNS contains a valid DNS entry.
           */
-          if (this.config.serviceDNS && this.config.serviceDNS !== '') {
+          else if (this.config.serviceDNS && this.config.serviceDNS !== '') {
             this.config.serviceIP = this.config.serviceDNS;
             this._updateInstanceData();
             ready();
           } else {
-            const net = require('net');
             if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-              const dns = require('dns');
               dns.lookup(this.config.serviceIP, (err, result) => {
                 this.config.serviceIP = result;
                 this._updateInstanceData();
@@ -293,7 +317,6 @@ class Hydra extends EventEmitter {
               });
             } else if (!this.config.serviceIP || this.config.serviceIP === '') {
               // handle IP selection
-              const os = require('os');
               let interfaces = os.networkInterfaces();
               if (this.config.serviceInterface && this.config.serviceInterface !== '') {
                 let segments = this.config.serviceInterface.split('/');
