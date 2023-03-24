@@ -129,6 +129,30 @@ describe('Hydra Main', function() {
   });
 
   /**
+  * @description Hydra should load if serviceName and servicePort is provided
+  */
+  it('should store as secured if protocol is set to https', (done) => {
+    hydra.init({
+      hydra: {
+        'serviceName': 'test-service',
+        'servicePort': 3000,
+        'serviceProtocol': 'https'
+      }
+    }, true)
+      .then(() => {
+        hydra.registerService().then((serviceInfo) => {
+          expect(serviceInfo).not.null;
+          expect(serviceInfo.serviceProtocol).to.equal('https');
+          done();
+        });
+      })
+      .catch((err) => {
+        expect(err).to.be.null;
+        done();
+      });
+  });
+
+  /**
   * @description Hydra should load without a hydra.redis branch in configuration
   */
   it('should load without config hydra.redis branch', (done) => {

@@ -588,7 +588,8 @@ class Hydra extends EventEmitter {
           resolve({
             serviceName: this.serviceName,
             serviceIP: this.config.serviceIP,
-            servicePort: this.config.servicePort
+            servicePort: this.config.servicePort,
+            serviceProtocol: this.config.serviceProtocol
           });
         }
       });
@@ -773,7 +774,8 @@ class Hydra extends EventEmitter {
       processID: process.pid,
       ip: this.config.serviceIP,
       port: this.config.servicePort,
-      hostName: this.hostName
+      hostName: this.hostName,
+      protocol: this.config.serviceProtocol
     });
     if (entry && !this.redisdb.closing) {
       let cmd = (this.testMode) ? 'multi' : 'batch';
@@ -1292,6 +1294,7 @@ class Hydra extends EventEmitter {
               host: instance.ip,
               port: instance.port,
               path: parsedRoute.apiRoute,
+              protocol: `${(instance.protocol || 'http')}:`,
               method: parsedRoute.httpMethod.toUpperCase()
             };
             let preHeaders = {};
